@@ -1,6 +1,6 @@
 import { createServer, type Server as NodeHttpServer } from "node:http";
 import { randomUUID } from "node:crypto";
-import { pathToFileURL } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { AVAILABLE_TOOLS, MOCO_PROMPTS, createMocoServer } from "./index.js";
 
@@ -48,7 +48,7 @@ function normalizeBasePath(pathValue: string | undefined): string {
 
 function getCurrentModuleUrl(): string | undefined {
   try {
-    return Function("return import.meta.url;")();
+    return (0, eval)("import.meta.url") as string;
   } catch {
     return undefined;
   }
@@ -163,7 +163,9 @@ const isCliEntry = (() => {
     return false;
   }
   try {
-    return moduleUrl === pathToFileURL(entryPoint).href;
+    const modulePath = fileURLToPath(moduleUrl);
+    const entryPath = fileURLToPath(pathToFileURL(entryPoint));
+    return modulePath === entryPath;
   } catch {
     return false;
   }

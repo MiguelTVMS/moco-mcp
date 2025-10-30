@@ -434,7 +434,7 @@ async function main() {
 
 const getCurrentModuleUrl = (): string | undefined => {
   try {
-    return Function("return import.meta.url;")();
+    return (0, eval)("import.meta.url") as string;
   } catch {
     return undefined;
   }
