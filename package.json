@@ -1,5 +1,5 @@
 {
-  "name": "@niondigital/moco-mcp",
+  "name": "@migueltvms/moco-mcp",
   "version": "1.2.6",
   "description": "Model Context Protocol (MCP) server for MOCO: time tracking, project management, holidays, and presence monitoring",
   "main": "dist/index.js",
@@ -42,9 +42,9 @@
     "assistant"
   ],
   "author": {
-    "name": "David Seibert, nion digital",
-    "email": "david.seibert@nion-digital.com",
-    "url": "https://www.nion-digital.com/"
+    "name": "João Miguel Tabosa Vaz Marques Silva",
+    "email": "joao@miguel.ms",
+    "url": "https://github.com/MiguelTVMS"
   },
   "license": "MIT",
   "homepage": "https://github.com/MiguelTVMS/moco-mcp#readme",
