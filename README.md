@@ -465,7 +465,7 @@ Summary:
 If you want to run from source:
 
 ```bash
-git clone https://github.com/niondigital/moco-mcp.git
+git clone https://github.com/MiguelTVMS/moco-mcp.git
 cd moco-mcp
 npm install
 npm run build
@@ -586,4 +586,4 @@ MIT License - see [LICENSE](LICENSE) file for details.
 
 - **MOCO API Issues:** [MOCO API Documentation](https://github.com/hundertzehn/mocoapp-api-docs)
 - **MCP Protocol:** [MCP Documentation](https://modelcontextprotocol.io/)
-- **This Package:** [GitHub Issues](https://github.com/niondigital/moco-mcp/issues)
+- **This Package:** [GitHub Issues](https://github.com/MiguelTVMS/moco-mcp/issues)
