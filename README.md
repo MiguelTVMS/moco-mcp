@@ -27,7 +27,7 @@ docker run --rm -p 8080:8080 \
   moco-mcp-http
 ```
 
-The HTTP server exposes the MCP Streamable HTTP transport on `http://localhost:8080`.
+The HTTP server exposes the MCP Streamable HTTP transport on `http://localhost:8080/mcp`.
 
 ## 🚀 Installation
 
@@ -194,6 +194,7 @@ Configure Gemini CLI with MCP support:
 ```
 
 4. Click `Save` to apply changes
+
 </details>
 
 <details>
@@ -201,6 +202,7 @@ Configure Gemini CLI with MCP support:
 
 1. Go to `Program` (right side) > `Install` > `Edit mcp.json`
 2. Paste the configuration below:
+
 ```json
 {
   "mcpServers": {
@@ -222,9 +224,9 @@ Configure Gemini CLI with MCP support:
   }
 }
 ```
+
 3. Click `Save` to apply changes
 4. Toggle MCP server on/off from the right hand side (under `Program`) or by clicking the plug icon at the bottom of the chat box
-
 
 </details>
 
@@ -235,7 +237,9 @@ Configure Gemini CLI with MCP support:
 1. **Log into your MOCO account**
 2. **Navigate to API settings:**
    - Go to **Profile** → **Integrations**
-  - Or visit: `https://your-subdomain.mocoapp.com/profile/integrations`
+
+- Or visit: `https://your-subdomain.mocoapp.com/profile/integrations`
+
 3. **Copy the listed API key**
 4. **Note your subdomain:**
    - From your MOCO URL: `https://yourcompany.mocoapp.com`
@@ -246,12 +250,14 @@ Configure Gemini CLI with MCP support:
 You can set environment variables in several ways:
 
 **Option 1: System Environment Variables**
+
 ```bash
 export MOCO_API_KEY="your-moco-api-key"
 export MOCO_SUBDOMAIN="your-subdomain"
 ```
 
 **Option 2: .env File (for local development)**
+
 ```env
 MOCO_API_KEY=your-moco-api-key
 MOCO_SUBDOMAIN=your-subdomain
@@ -290,6 +296,7 @@ The MoCo MCP server provides 8 intelligent prompts that orchestrate multiple too
 ### Prompt Examples
 
 **Weekly Time Report:**
+
 ```json
 {
   "name": "weekly_time_report",
@@ -301,6 +308,7 @@ The MoCo MCP server provides 8 intelligent prompts that orchestrate multiple too
 ```
 
 **Vacation Planning:**
+
 ```json
 {
   "name": "vacation_planning_assistant",
@@ -312,6 +320,7 @@ The MoCo MCP server provides 8 intelligent prompts that orchestrate multiple too
 ```
 
 **Work-Life Balance Analysis:**
+
 ```json
 {
   "name": "smart_work_life_balance_advisor",
@@ -323,6 +332,7 @@ The MoCo MCP server provides 8 intelligent prompts that orchestrate multiple too
 ```
 
 **Compliance Check:**
+
 ```json
 {
   "name": "work_hours_compliance_check",
@@ -339,6 +349,7 @@ The MoCo MCP server provides 8 intelligent prompts that orchestrate multiple too
 ### Get Activities
 
 **Filter all activities in a date range:**
+
 ```json
 {
   "name": "get_activities",
@@ -350,6 +361,7 @@ The MoCo MCP server provides 8 intelligent prompts that orchestrate multiple too
 ```
 
 **Filter activities for a specific project:**
+
 ```json
 {
   "name": "get_activities",
@@ -362,6 +374,7 @@ The MoCo MCP server provides 8 intelligent prompts that orchestrate multiple too
 ```
 
 **Sample Output:**
+
 ```
 Activities from 2024-01-01 to 2024-01-31:
 
@@ -378,6 +391,7 @@ Grand total: 7.75h (7:45)
 ### Get User Projects
 
 **List all assigned projects:**
+
 ```json
 {
   "name": "get_user_projects",
@@ -386,6 +400,7 @@ Grand total: 7.75h (7:45)
 ```
 
 **Search projects:**
+
 ```json
 {
   "name": "get_user_projects",
@@ -418,6 +433,7 @@ Grand total: 7.75h (7:45)
 ```
 
 **Sample Output:**
+
 ```
 Holiday overview for 2024:
 
@@ -446,6 +462,7 @@ Summary:
 ```
 
 **Sample Output:**
+
 ```
 Presences from 2024-01-01 to 2024-01-07:
 
@@ -484,6 +501,7 @@ Statistics:
 ```
 
 **Sample Output:**
+
 ```
 Public holidays for 2024:
 
@@ -568,35 +586,44 @@ docker run --rm -p 8080:8080 -e MOCO_API_KEY=... -e MOCO_SUBDOMAIN=... moco-mcp-
 ### Common Issues
 
 **❌ Authentication Error:**
+
 ```
 API authentication failed. Please check MOCO_API_KEY.
 ```
+
 - Verify your API key is correct and has necessary permissions
 - Check if the API key is properly set in environment variables
 - Ensure the key hasn't expired
 
 **❌ Subdomain Error:**
+
 ```
 MOCO_SUBDOMAIN should only contain the subdomain name
 ```
+
 - Use only the subdomain part: `company` (not `company.mocoapp.com`)
 - Remove `https://` and `.mocoapp.com` from the subdomain
 
 **❌ Docker Image Not Found:**
+
 ```
 Unable to find image 'ghcr.io/migueltvms/moco-mcp-cli:latest' locally
 ```
+
 - Pull the image first: `docker pull ghcr.io/migueltvms/moco-mcp-cli:latest`
 - Or double-check the tag you are referencing in your MCP client configuration.
 
 **❌ Environment Variables Missing:**
+
 ```
 API authentication failed. Please check MOCO_API_KEY.
 ```
+
 - Ensure the `-e MOCO_API_KEY=...` and `-e MOCO_SUBDOMAIN=...` flags are present in your `docker run` command.
 - For HTTP deployments, confirm the variables are set in your orchestrator or compose file.
 
 **❌ MCP Client Not Finding Tools:**
+
 - Restart your MCP client after configuration changes
 - Check that environment variables are properly set
 - Verify JSON configuration syntax is correct
@@ -655,4 +682,4 @@ MIT License - see [LICENSE](LICENSE) file for details.
 
 ## 🙏 Acknowledgements
 
-This package is based on the original work of David Seibert (nion digital). You can reach the original author at `david.seibert@nion-digital.com` or https://www.nion-digital.com/.
+This package is based on the original work of David Seibert (nion digital). You can reach the original author at `david.seibert@nion-digital.com` or <https://www.nion-digital.com/>.

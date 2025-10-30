@@ -7,8 +7,10 @@ import request from 'supertest';
 import { LATEST_PROTOCOL_VERSION } from '@modelcontextprotocol/sdk/types.js';
 import { startHttpServer } from '../../src/http';
 
+const BASE_PATH = '/mcp';
+
 async function createServer() {
-  return startHttpServer({ port: 0, handleSignals: false });
+  return startHttpServer({ port: 0, handleSignals: false, path: BASE_PATH });
 }
 
 const ACCEPT_HEADER = 'application/json, text/event-stream';
@@ -21,16 +23,16 @@ function createBaseHeaders() {
 }
 
 function createSessionHeaders(sessionId: string, protocolVersion: string) {
-    return {
-      ...createBaseHeaders(),
-      'Mcp-Session-Id': sessionId,
-      'Mcp-Protocol-Version': protocolVersion
-    };
+  return {
+    ...createBaseHeaders(),
+    'Mcp-Session-Id': sessionId,
+    'Mcp-Protocol-Version': protocolVersion
+  };
 }
 
 async function performInitialization(server: Awaited<ReturnType<typeof createServer>>) {
   const initResponse = await request(server.httpServer)
-    .post('/')
+    .post(BASE_PATH)
     .set(createBaseHeaders())
     .send({
       jsonrpc: '2.0',
@@ -58,7 +60,7 @@ async function performInitialization(server: Awaited<ReturnType<typeof createSer
 let consoleErrorSpy: jest.SpiedFunction<typeof console.error>;
 
 beforeEach(() => {
-  consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+  consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => { });
 });
 
 afterEach(() => {
@@ -72,7 +74,7 @@ describe('HTTP MCP server', () => {
       const { sessionId, protocolVersion } = await performInitialization(controls);
 
       const initializedResponse = await request(controls.httpServer)
-        .post('/')
+        .post(BASE_PATH)
         .set(createSessionHeaders(sessionId, protocolVersion))
         .send({
           jsonrpc: '2.0',
@@ -83,7 +85,7 @@ describe('HTTP MCP server', () => {
       expect(initializedResponse.status).toBe(202);
 
       const toolsResponse = await request(controls.httpServer)
-        .post('/')
+        .post(BASE_PATH)
         .set(createSessionHeaders(sessionId, protocolVersion))
         .send({
           jsonrpc: '2.0',
@@ -101,7 +103,7 @@ describe('HTTP MCP server', () => {
       );
 
       const promptsResponse = await request(controls.httpServer)
-        .post('/')
+        .post(BASE_PATH)
         .set(createSessionHeaders(sessionId, protocolVersion))
         .send({
           jsonrpc: '2.0',
@@ -121,7 +123,7 @@ describe('HTTP MCP server', () => {
   it('rejects GET requests without the required Accept header', async () => {
     const controls = await createServer();
     try {
-      const response = await request(controls.httpServer).get('/');
+      const response = await request(controls.httpServer).get(BASE_PATH);
 
       expect(response.status).toBe(406);
       expect(response.text).toContain('Not Acceptable');
@@ -134,7 +136,7 @@ describe('HTTP MCP server', () => {
     const controls = await createServer();
     try {
       const response = await request(controls.httpServer)
-        .get('/')
+        .get(BASE_PATH)
         .set('Accept', 'text/event-stream');
 
       expect(response.status).toBe(400);
@@ -148,12 +150,32 @@ describe('HTTP MCP server', () => {
     const controls = await createServer();
     try {
       const response = await request(controls.httpServer)
-        .post('/')
+        .post(BASE_PATH)
         .set('Content-Type', 'application/json')
         .send({});
 
       expect(response.status).toBe(406);
       expect(response.text).toContain('Not Acceptable');
+    } finally {
+      await controls.shutdown();
+    }
+  });
+
+  it('returns 404 for requests outside the configured base path', async () => {
+    const controls = await createServer();
+    try {
+      const response = await request(controls.httpServer)
+        .post('/wrong-path')
+        .set(createBaseHeaders())
+        .send({
+          jsonrpc: '2.0',
+          id: 42,
+          method: 'tools/list',
+          params: {}
+        });
+
+      expect(response.status).toBe(404);
+      expect(response.body?.error?.message).toBe('Not Found');
     } finally {
       await controls.shutdown();
     }
@@ -172,7 +194,7 @@ describe('HTTP MCP server', () => {
       const { protocolVersion } = await performInitialization(controls);
 
       const response = await request(controls.httpServer)
-        .post('/')
+        .post(BASE_PATH)
         .set({
           ...createBaseHeaders(),
           'Mcp-Protocol-Version': protocolVersion

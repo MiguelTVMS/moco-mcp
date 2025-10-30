@@ -92,7 +92,7 @@ export function createMocoServer(): Server {
    */
   server.setRequestHandler(GetPromptRequestSchema, async (request) => {
     const { name, arguments: args } = request.params;
-    
+
     const prompt = getMocoPromptByName(name);
     if (!prompt) {
       throw new Error(`Prompt not found: ${name}`);
@@ -100,7 +100,7 @@ export function createMocoServer(): Server {
 
     // Generate prompt template based on the specific prompt type
     let template = '';
-    
+
     switch (name) {
       case 'weekly_time_report':
         template = generateWeeklyTimeReportPrompt(args);
@@ -162,10 +162,10 @@ export function createMocoServer(): Server {
    */
   server.setRequestHandler(CallToolRequestSchema, async (request) => {
     const { name, arguments: args } = request.params;
-    
+
     // Find the requested tool
     const tool = AVAILABLE_TOOLS.find(t => t.name === name);
-    
+
     if (!tool) {
       throw new Error(`Tool not found: ${name}`);
     }
@@ -173,7 +173,7 @@ export function createMocoServer(): Server {
     try {
       // Execute the tool with provided arguments
       const result = await tool.handler(args as any || {});
-      
+
       return {
         content: [
           {
@@ -187,7 +187,7 @@ export function createMocoServer(): Server {
       return {
         content: [
           {
-            type: "text", 
+            type: "text",
             text: `Error executing tool ${name}: ${error instanceof Error ? error.message : 'Unknown error'}`
           }
         ]
@@ -202,7 +202,7 @@ export function createMocoServer(): Server {
 function generateWeeklyTimeReportPrompt(args: any): string {
   const weekStart = args?.week_start || 'current Monday';
   const includeBillable = args?.include_billable_analysis !== false;
-  
+
   return `Please generate a comprehensive weekly time tracking report for the week starting ${weekStart}.
 
 Use the following MoCo tools to gather the necessary data:
@@ -225,11 +225,11 @@ function generateVacationPlanningPrompt(args: any): string {
   const startDate = args?.planned_start_date;
   const endDate = args?.planned_end_date;
   const year = args?.year || new Date().getFullYear();
-  
+
   if (!startDate || !endDate) {
     return 'Error: planned_start_date and planned_end_date are required for vacation planning.';
   }
-  
+
   return `Please help me plan my vacation from ${startDate} to ${endDate}.
 
 Use the following MoCo tools to analyze my vacation planning:
@@ -250,7 +250,7 @@ Consider both personal work-life balance and business considerations in your rec
 function generateProductivityInsightsPrompt(args: any): string {
   const period = args?.analysis_period || 'last_month';
   const focusArea = args?.focus_area || 'general_productivity';
-  
+
   return `Please analyze my personal productivity patterns for the period: ${period}, with focus on: ${focusArea}.
 
 Use these MoCo tools for comprehensive analysis:
@@ -275,7 +275,7 @@ function generateMonthlyBusinessReviewPrompt(args: any): string {
   const month = args?.month || new Date().getMonth() + 1;
   const year = args?.year || new Date().getFullYear();
   const includeComparisons = args?.include_comparisons !== false;
-  
+
   return `Please create a comprehensive monthly business review for ${month}/${year}.
 
 Use these MoCo tools to gather business intelligence:
@@ -302,7 +302,7 @@ Present findings in an executive summary format suitable for stakeholder review.
 function generateWorkLifeBalancePrompt(args: any): string {
   const analysisWeeks = args?.analysis_weeks || 4;
   const targetHours = args?.target_hours_per_week || 40;
-  
+
   return `Please evaluate my work-life balance over the last ${analysisWeeks} weeks, using ${targetHours} hours as the target weekly hours.
 
 Use these MoCo tools for work-life balance analysis:
@@ -330,7 +330,7 @@ function generateProjectTimeAnalysisPrompt(args: any): string {
   const projectIds = args?.project_ids || '';
   const timePeriod = args?.time_period || 'last_month';
   const projectFilter = projectIds ? `projects with IDs: ${projectIds}` : 'all active projects';
-  
+
   return `Please conduct a detailed time analysis for ${projectFilter} over the ${timePeriod} period.
 
 Use these MoCo tools for comprehensive project analysis:
@@ -358,7 +358,7 @@ Include visual summaries and actionable insights for optimizing project delivery
 function generateTeamCapacityPrompt(args: any): string {
   const planningHorizon = args?.planning_horizon || 8;
   const includeHolidays = args?.include_holidays !== false;
-  
+
   return `Please provide a team capacity overview for the next ${planningHorizon} weeks${includeHolidays ? ', including holiday considerations' : ''}.
 
 Use these MoCo tools for capacity planning:
@@ -386,7 +386,7 @@ function generateComplianceCheckPrompt(args: any): string {
   const checkPeriod = args?.check_period || 'last_month';
   const maxWeeklyHours = args?.max_weekly_hours || 48;
   const maxDailyHours = args?.max_daily_hours || 10;
-  
+
   return `Please conduct a comprehensive work hours compliance check for the ${checkPeriod} period.
 
 Legal limits to check against:
@@ -432,13 +432,25 @@ async function main() {
   }
 }
 
+const getCurrentModuleUrl = (): string | undefined => {
+  try {
+    return Function("return import.meta.url;")();
+  } catch {
+    return undefined;
+  }
+};
+
 const isCliEntry = (() => {
   const entryPoint = process.argv?.[1];
   if (!entryPoint) {
     return false;
   }
+  const moduleUrl = getCurrentModuleUrl();
+  if (!moduleUrl) {
+    return false;
+  }
   try {
-    return import.meta.url === pathToFileURL(entryPoint).href;
+    return moduleUrl === pathToFileURL(entryPoint).href;
   } catch {
     return false;
   }

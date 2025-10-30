@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-FROM node:20-bookworm-slim AS builder
+FROM node:24-trixie-slim AS builder
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
@@ -8,7 +8,7 @@ COPY tsconfig.json ./
 COPY src ./src
 RUN npm run build
 
-FROM node:20-bookworm-slim AS runner
+FROM node:24-trixie-slim AS runner
 ENV NODE_ENV=production
 WORKDIR /app
 COPY package.json package-lock.json ./

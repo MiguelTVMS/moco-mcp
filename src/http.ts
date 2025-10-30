@@ -14,7 +14,8 @@ interface HttpServerControls {
 interface StartHttpServerOptions {
   port?: number;
   host?: string;
-  sessionMode?: "stateful" | "stateless";
+  path?: string;
+  sessionStateful?: boolean;
   handleSignals?: boolean;
 }
 
@@ -29,10 +30,35 @@ function parseCsvEnv(value: string | undefined): string[] | undefined {
   return entries.length > 0 ? entries : undefined;
 }
 
+function normalizeBasePath(pathValue: string | undefined): string {
+  const fallback = "/mcp";
+  if (!pathValue) {
+    return fallback;
+  }
+  const trimmed = pathValue.trim();
+  if (!trimmed) {
+    return fallback;
+  }
+  const withLeadingSlash = trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
+  if (withLeadingSlash.length === 1) {
+    return "/";
+  }
+  return withLeadingSlash.endsWith("/") ? withLeadingSlash.slice(0, -1) : withLeadingSlash;
+}
+
+function getCurrentModuleUrl(): string | undefined {
+  try {
+    return Function("return import.meta.url;")();
+  } catch {
+    return undefined;
+  }
+}
+
 export async function startHttpServer(options: StartHttpServerOptions = {}): Promise<HttpServerControls> {
   const port = options.port ?? Number(process.env.MCP_HTTP_PORT ?? process.env.PORT ?? 8080);
   const host = options.host ?? process.env.MCP_HTTP_HOST ?? "0.0.0.0";
-  const sessionMode = options.sessionMode ?? (process.env.MCP_HTTP_SESSION_MODE?.toLowerCase() === "stateless" ? "stateless" : "stateful");
+  const basePath = normalizeBasePath(options.path ?? process.env.MCP_HTTP_PATH);
+  const sessionStateful = options.sessionStateful ?? (process.env.MCP_HTTP_SESSION_STATEFUL?.toLowerCase() !== "false");
   const handleSignals = options.handleSignals ?? true;
 
   const allowedHosts = parseCsvEnv(process.env.MCP_HTTP_ALLOWED_HOSTS);
@@ -40,7 +66,7 @@ export async function startHttpServer(options: StartHttpServerOptions = {}): Pro
 
   const mcpServer = createMocoServer();
   const transport = new StreamableHTTPServerTransport({
-    sessionIdGenerator: sessionMode === "stateless" ? undefined : () => randomUUID(),
+    sessionIdGenerator: sessionStateful ? () => randomUUID() : undefined,
     enableJsonResponse: true,
     allowedHosts,
     allowedOrigins,
@@ -51,6 +77,29 @@ export async function startHttpServer(options: StartHttpServerOptions = {}): Pro
 
   const httpServer = createServer(async (req, res) => {
     try {
+      const requestUrl = new URL(req.url ?? "/", `http://${req.headers.host ?? "localhost"}`);
+      const matchesBasePath = basePath === "/"
+        ? true
+        : requestUrl.pathname === basePath || requestUrl.pathname.startsWith(`${basePath}/`);
+
+      if (!matchesBasePath) {
+        res.writeHead(404, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({
+          jsonrpc: "2.0",
+          error: {
+            code: -32601,
+            message: "Not Found",
+          },
+          id: null,
+        }));
+        return;
+      }
+
+      if (basePath !== "/") {
+        const remainder = requestUrl.pathname.slice(basePath.length) || "/";
+        const normalizedRemainder = remainder.startsWith("/") ? remainder : `/${remainder}`;
+        req.url = `${normalizedRemainder}${requestUrl.search}`;
+      }
       await transport.handleRequest(req, res);
     } catch (error) {
       console.error("Failed to handle HTTP request:", error);
@@ -75,7 +124,7 @@ export async function startHttpServer(options: StartHttpServerOptions = {}): Pro
     httpServer.listen(port, host, resolve);
   });
 
-  console.error(`MoCo MCP HTTP server listening on http://${host}:${port}`);
+  console.error(`MoCo MCP HTTP server listening on http://${host}:${port}${basePath}`);
   console.error(`Available tools: ${AVAILABLE_TOOLS.map((tool) => tool.name).join(", ")}`);
   console.error(`Available prompts: ${MOCO_PROMPTS.map((prompt) => prompt.name).join(", ")}`);
 
@@ -109,8 +158,12 @@ const isCliEntry = (() => {
   if (!entryPoint) {
     return false;
   }
+  const moduleUrl = getCurrentModuleUrl();
+  if (!moduleUrl) {
+    return false;
+  }
   try {
-    return import.meta.url === pathToFileURL(entryPoint).href;
+    return moduleUrl === pathToFileURL(entryPoint).href;
   } catch {
     return false;
   }
