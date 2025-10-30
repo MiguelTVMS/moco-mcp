@@ -26,7 +26,8 @@
                 "orta.vscode-jest",
                 "streetsidesoftware.code-spell-checker",
                 "ardisaurus.gitflow-actions-sidebar",
-                "codezombiech.gitignore"
+                "codezombiech.gitignore",
+                "Orta.vscode-jest"
             ]
         }
     },
