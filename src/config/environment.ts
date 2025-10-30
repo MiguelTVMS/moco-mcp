@@ -42,20 +42,20 @@ const DEFAULT_LOG_LEVEL: LogLevel = "info";
 export function getMocoConfig(): MocoConfig {
   const apiKey = process.env.MOCO_API_KEY;
   const subdomain = process.env.MOCO_SUBDOMAIN;
-  
+
   if (!apiKey) {
     throw new Error('MOCO_API_KEY environment variable is required');
   }
-  
+
   if (!subdomain) {
     throw new Error('MOCO_SUBDOMAIN environment variable is required');
   }
-  
+
   // Validate subdomain format - should not contain protocol or domain parts
   if (subdomain.includes('.') || subdomain.includes('http')) {
     throw new Error('MOCO_SUBDOMAIN should only contain the subdomain name (e.g., "yourcompany", not "yourcompany.mocoapp.com")');
   }
-  
+
   return {
     apiKey,
     subdomain,
