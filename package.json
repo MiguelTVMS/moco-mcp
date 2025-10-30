@@ -25,7 +25,8 @@
     "test:coverage": "jest --coverage",
     "test:unit": "jest tests/unit",
     "test:integration": "jest tests/integration",
-    "test:mcp": "jest tests/mcp"
+    "test:mcp": "jest tests/mcp",
+    "docker:build": "docker build -t moco-mcp ."
   },
   "keywords": [
     "mcp",
@@ -44,13 +45,13 @@
     "url": "https://www.nion-digital.com/"
   },
   "license": "MIT",
-  "homepage": "https://github.com/niondigital/moco-mcp#readme",
+  "homepage": "https://github.com/MiguelTVMS/moco-mcp#readme",
   "repository": {
     "type": "git",
-    "url": "https://github.com/niondigital/moco-mcp.git"
+    "url": "https://github.com/MiguelTVMS/moco-mcp.git"
   },
   "bugs": {
-    "url": "https://github.com/niondigital/moco-mcp/issues"
+    "url": "https://github.com/MiguelTVMS/moco-mcp/issues"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.17.1",
