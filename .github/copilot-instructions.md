@@ -57,4 +57,9 @@ Welcome! This repository implements a Model Context Protocol (MCP) server for th
 - Coordinate any protocol-level changes with corresponding adjustments in tests and documentation.
 - Respect existing TypeScript strictness—prefer explicit types and handle error cases gracefully using utilities like `errorHandler`.
 
+## Development Workflow
+- Commit changes with clear messages referencing relevant issues.
+- Open pull requests against the `develop` branch for review.
+- Ensure all tests pass and linting checks complete before merging.
+
 Following these guidelines will help ensure Copilot suggestions stay aligned with project standards and that the codebase remains reliable and well-documented. Happy hacking! 🚀

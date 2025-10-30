@@ -6,9 +6,9 @@
  * project management, holiday tracking, and presence monitoring
  */
 
-import { pathToFileURL } from "node:url";
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import path from "node:path";
 import {
   CallToolRequestSchema,
   GetPromptRequestSchema,
@@ -432,28 +432,13 @@ async function main() {
   }
 }
 
-const getCurrentModuleUrl = (): string | undefined => {
-  try {
-    return (0, eval)("import.meta.url") as string;
-  } catch {
-    return undefined;
-  }
-};
-
 const isCliEntry = (() => {
   const entryPoint = process.argv?.[1];
   if (!entryPoint) {
     return false;
   }
-  const moduleUrl = getCurrentModuleUrl();
-  if (!moduleUrl) {
-    return false;
-  }
-  try {
-    return moduleUrl === pathToFileURL(entryPoint).href;
-  } catch {
-    return false;
-  }
+  const entryBasename = path.basename(entryPoint);
+  return entryBasename === "index.ts" || entryBasename === "index.js";
 })();
 
 if (isCliEntry) {

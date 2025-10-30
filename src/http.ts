@@ -1,6 +1,6 @@
 import { createServer, type Server as NodeHttpServer } from "node:http";
 import { randomUUID } from "node:crypto";
-import { fileURLToPath, pathToFileURL } from "node:url";
+import path from "node:path";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { AVAILABLE_TOOLS, MOCO_PROMPTS, createMocoServer } from "./index.js";
 
@@ -44,14 +44,6 @@ function normalizeBasePath(pathValue: string | undefined): string {
     return "/";
   }
   return withLeadingSlash.endsWith("/") ? withLeadingSlash.slice(0, -1) : withLeadingSlash;
-}
-
-function getCurrentModuleUrl(): string | undefined {
-  try {
-    return (0, eval)("import.meta.url") as string;
-  } catch {
-    return undefined;
-  }
 }
 
 export async function startHttpServer(options: StartHttpServerOptions = {}): Promise<HttpServerControls> {
@@ -158,17 +150,8 @@ const isCliEntry = (() => {
   if (!entryPoint) {
     return false;
   }
-  const moduleUrl = getCurrentModuleUrl();
-  if (!moduleUrl) {
-    return false;
-  }
-  try {
-    const modulePath = fileURLToPath(moduleUrl);
-    const entryPath = fileURLToPath(pathToFileURL(entryPoint));
-    return modulePath === entryPath;
-  } catch {
-    return false;
-  }
+  const entryBasename = path.basename(entryPoint);
+  return entryBasename === "http.ts" || entryBasename === "http.js";
 })();
 
 if (isCliEntry) {
