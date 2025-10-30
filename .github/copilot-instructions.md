@@ -49,6 +49,7 @@ Welcome! This repository implements a Model Context Protocol (MCP) server for th
 - Debug via VS Code launch configurations: `Debug MCP CLI (stdio)` and `Debug MCP HTTP Server` (delegates to `npm run debug:http`).
 - The `debug:http` script loads `.env` automatically; ensure local credentials remain out of version control.
 - Docker images should continue to build with `npm run docker:build` and `npm run docker:build:http`; verify after modifying dependencies or node runtime requirements.
+- The logger implementation should be done in `utils/logger.ts` to maintain consistent log formatting across transports. The default log level is `info`. The environment variable `LOG_LEVEL` can be set to adjust verbosity.
 
 ## Contribution Notes
 
@@ -61,5 +62,11 @@ Welcome! This repository implements a Model Context Protocol (MCP) server for th
 - Commit changes with clear messages referencing relevant issues.
 - Open pull requests against the `develop` branch for review.
 - Ensure all tests pass and linting checks complete before merging.
+
+## Aditional Guidelines
+- When new environment variables are introduced, ensure they are documented in `.env.example` and `README.md`.
+- For any modifications to the HTTP transport, validate changes with appropriate tests in `tests/http/`.
+- Use the existing logging utility for any new logging requirements to maintain consistency.
+- All the environment variables used in the project should be read through the configuration helpers located in `src/config/environment.ts` to ensure centralized management.
 
 Following these guidelines will help ensure Copilot suggestions stay aligned with project standards and that the codebase remains reliable and well-documented. Happy hacking! 🚀

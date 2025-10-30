@@ -1,8 +1,10 @@
-import { createServer, type Server as NodeHttpServer } from "node:http";
+import { createServer, type IncomingMessage, type Server as NodeHttpServer } from "node:http";
 import { randomUUID } from "node:crypto";
 import path from "node:path";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { AVAILABLE_TOOLS, MOCO_PROMPTS, createMocoServer } from "./index.js";
+import { getHttpServerConfig, normalizeHttpBasePath } from "./config/environment.js";
+import { logger } from "./utils/logger.js";
 
 interface HttpServerControls {
   httpServer: NodeHttpServer;
@@ -19,42 +21,15 @@ interface StartHttpServerOptions {
   handleSignals?: boolean;
 }
 
-function parseCsvEnv(value: string | undefined): string[] | undefined {
-  if (!value) {
-    return undefined;
-  }
-  const entries = value
-    .split(",")
-    .map((entry) => entry.trim())
-    .filter(Boolean);
-  return entries.length > 0 ? entries : undefined;
-}
-
-function normalizeBasePath(pathValue: string | undefined): string {
-  const fallback = "/mcp";
-  if (!pathValue) {
-    return fallback;
-  }
-  const trimmed = pathValue.trim();
-  if (!trimmed) {
-    return fallback;
-  }
-  const withLeadingSlash = trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
-  if (withLeadingSlash.length === 1) {
-    return "/";
-  }
-  return withLeadingSlash.endsWith("/") ? withLeadingSlash.slice(0, -1) : withLeadingSlash;
-}
-
 export async function startHttpServer(options: StartHttpServerOptions = {}): Promise<HttpServerControls> {
-  const port = options.port ?? Number(process.env.MCP_HTTP_PORT ?? process.env.PORT ?? 8080);
-  const host = options.host ?? process.env.MCP_HTTP_HOST ?? "0.0.0.0";
-  const basePath = normalizeBasePath(options.path ?? process.env.MCP_HTTP_PATH);
-  const sessionStateful = options.sessionStateful ?? (process.env.MCP_HTTP_SESSION_STATEFUL?.toLowerCase() !== "false");
+  const envConfig = getHttpServerConfig();
+  const port = options.port ?? envConfig.port;
+  const host = options.host ?? envConfig.host;
+  const basePath = normalizeHttpBasePath(options.path ?? envConfig.basePath);
+  const sessionStateful = options.sessionStateful ?? envConfig.sessionStateful;
   const handleSignals = options.handleSignals ?? true;
-
-  const allowedHosts = parseCsvEnv(process.env.MCP_HTTP_ALLOWED_HOSTS);
-  const allowedOrigins = parseCsvEnv(process.env.MCP_HTTP_ALLOWED_ORIGINS);
+  const allowedHosts = envConfig.allowedHosts;
+  const allowedOrigins = envConfig.allowedOrigins;
 
   const mcpServer = createMocoServer();
   const transport = new StreamableHTTPServerTransport({
@@ -68,13 +43,51 @@ export async function startHttpServer(options: StartHttpServerOptions = {}): Pro
   await mcpServer.connect(transport);
 
   const httpServer = createServer(async (req, res) => {
+    const shouldLogDebug = logger.isLevelEnabled("debug");
+    let requestLogged = false;
+    let requestUrl: URL | undefined;
+
+    const logRequest = (body: unknown) => {
+      if (!shouldLogDebug || requestLogged) {
+        return;
+      }
+      requestLogged = true;
+      logger.debug("HTTP request received", {
+        method: req.method,
+        url: requestUrl?.href ?? req.url ?? "/",
+        headers: req.headers,
+        body,
+      });
+    };
+
     try {
-      const requestUrl = new URL(req.url ?? "/", `http://${req.headers.host ?? "localhost"}`);
+      requestUrl = new URL(req.url ?? "/", `http://${req.headers.host ?? "localhost"}`);
       const matchesBasePath = basePath === "/"
         ? true
         : requestUrl.pathname === basePath || requestUrl.pathname.startsWith(`${basePath}/`);
 
+      if (shouldLogDebug) {
+        captureRequestBody(
+          req,
+          (body) => {
+            if (body === undefined || body.length === 0) {
+              logRequest(null);
+              return;
+            }
+            try {
+              logRequest(JSON.parse(body));
+            } catch {
+              logRequest(body);
+            }
+          },
+          (error) => {
+            logRequest({ error });
+          },
+        );
+      }
+
       if (!matchesBasePath) {
+        logRequest(null);
         res.writeHead(404, { "Content-Type": "application/json" });
         res.end(JSON.stringify({
           jsonrpc: "2.0",
@@ -84,6 +97,9 @@ export async function startHttpServer(options: StartHttpServerOptions = {}): Pro
           },
           id: null,
         }));
+        if (shouldLogDebug) {
+          req.resume();
+        }
         return;
       }
 
@@ -94,6 +110,10 @@ export async function startHttpServer(options: StartHttpServerOptions = {}): Pro
       }
       await transport.handleRequest(req, res);
     } catch (error) {
+      logRequest(null);
+      logger.debug("HTTP request handler caught error", {
+        message: error instanceof Error ? error.message : String(error),
+      });
       console.error("Failed to handle HTTP request:", error);
       if (!res.headersSent) {
         res.writeHead(500, { "Content-Type": "application/json" });
@@ -159,4 +179,70 @@ if (isCliEntry) {
     console.error("Failed to start MoCo MCP HTTP server:", error);
     process.exit(1);
   });
+}
+
+type RequestBodyCallback = (body: string | undefined) => void;
+type RequestErrorCallback = (error: string) => void;
+
+function captureRequestBody(req: IncomingMessage, onComplete: RequestBodyCallback, onError: RequestErrorCallback): void {
+  const chunks: Buffer[] = [];
+  let finished = false;
+
+  const cleanup = () => {
+    if (typeof req.off === "function") {
+      req.off("data", onData as unknown as (...args: unknown[]) => void);
+      req.off("end", onEnd as unknown as (...args: unknown[]) => void);
+      req.off("error", onErrorHandler as unknown as (...args: unknown[]) => void);
+      req.off("close", onClose as unknown as (...args: unknown[]) => void);
+    } else {
+      req.removeListener("data", onData as unknown as (...args: unknown[]) => void);
+      req.removeListener("end", onEnd as unknown as (...args: unknown[]) => void);
+      req.removeListener("error", onErrorHandler as unknown as (...args: unknown[]) => void);
+      req.removeListener("close", onClose as unknown as (...args: unknown[]) => void);
+    }
+  };
+
+  const complete = (body: string | undefined) => {
+    if (finished) {
+      return;
+    }
+    finished = true;
+    cleanup();
+    onComplete(body);
+  };
+
+  const fail = (message: string) => {
+    if (finished) {
+      return;
+    }
+    finished = true;
+    cleanup();
+    onError(message);
+  };
+
+  const onData = (chunk: Buffer | string) => {
+    if (typeof chunk === "string") {
+      chunks.push(Buffer.from(chunk));
+    } else {
+      chunks.push(chunk);
+    }
+  };
+
+  const onEnd = () => {
+    complete(chunks.length > 0 ? Buffer.concat(chunks).toString("utf8") : undefined);
+  };
+
+  const onClose = () => {
+    complete(chunks.length > 0 ? Buffer.concat(chunks).toString("utf8") : undefined);
+  };
+
+  const onErrorHandler = (err: unknown) => {
+    const message = err instanceof Error ? err.message : String(err);
+    fail(message);
+  };
+
+  req.on("data", onData);
+  req.on("end", onEnd);
+  req.on("close", onClose);
+  req.on("error", onErrorHandler);
 }
