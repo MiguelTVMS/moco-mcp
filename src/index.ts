@@ -432,25 +432,13 @@ async function main() {
   }
 }
 
-const getCurrentModuleUrl = (): string | undefined => {
-  try {
-    return Function('return import.meta.url;')();
-  } catch {
-    return undefined;
-  }
-};
-
 const isCliEntry = (() => {
   const entryPoint = process.argv?.[1];
   if (!entryPoint) {
     return false;
   }
-  const moduleUrl = getCurrentModuleUrl();
-  if (!moduleUrl) {
-    return false;
-  }
   try {
-    return moduleUrl === pathToFileURL(entryPoint).href;
+    return import.meta.url === pathToFileURL(entryPoint).href;
   } catch {
     return false;
   }
