@@ -28,7 +28,8 @@
     "test:mcp": "jest tests/mcp",
     "docker:build": "docker build -t moco-mcp .",
     "docker:build:http": "docker build -f Dockerfile.http -t moco-mcp-http .",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "debug:http": "node --env-file=.env --inspect --import tsx/esm ./src/http.ts"
   },
   "keywords": [
     "mcp",
