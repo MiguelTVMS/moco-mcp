@@ -4,17 +4,36 @@ A Model Context Protocol (MCP) server that provides employee read access to the 
 
 ## ⚡ Quick Start
 
+Build the container and run the MCP server directly through Docker:
+
 ```bash
-npx -y @niondigital/moco-mcp
+# 1. Pull the published stdio MCP image (used by most clients)
+docker pull ghcr.io/migueltvms/moco-mcp-cli:latest
+
+# 2. Run the server (stdin/stdout transport) with your credentials
+docker run --rm -i \
+  -e MOCO_API_KEY="your-moco-api-key" \
+  -e MOCO_SUBDOMAIN="your-subdomain" \
+  ghcr.io/migueltvms/moco-mcp-cli:latest
 ```
 
-That's it! The server will start and be ready to connect to your MCP client.
+Prefer HTTP? Use the dedicated image instead:
+
+```bash
+docker build -f Dockerfile.http -t moco-mcp-http .
+docker run --rm -p 8080:8080 \
+  -e MOCO_API_KEY="your-moco-api-key" \
+  -e MOCO_SUBDOMAIN="your-subdomain" \
+  moco-mcp-http
+```
+
+The HTTP server exposes the MCP Streamable HTTP transport on `http://localhost:8080`.
 
 ## 🚀 Installation
 
 ### Prerequisites
 
-- Node.js ≥ 18.0.0
+- Docker Engine ≥ 20.10
 - MOCO account with API access
 - MOCO API key and subdomain
 
@@ -32,12 +51,15 @@ Add to your Claude Desktop claude_desktop_config.json file:
 {
   "mcpServers": {
     "moco": {
-      "command": "npx",
-      "args": ["-y", "@niondigital/moco-mcp"],
-      "env": {
-        "MOCO_API_KEY": "your-moco-api-key",
-        "MOCO_SUBDOMAIN": "your-subdomain"
-      }
+      "command": "docker",
+      "args": [
+        "run",
+        "--rm",
+        "-i",
+        "-e", "MOCO_API_KEY=your-moco-api-key",
+        "-e", "MOCO_SUBDOMAIN=your-subdomain",
+        "ghcr.io/migueltvms/moco-mcp-cli:latest"
+      ]
     }
   }
 }
@@ -58,12 +80,15 @@ Add to your Cursor settings:
 {
   "mcpServers": {
     "moco": {
-      "command": "npx",
-      "args": ["-y", "@niondigital/moco-mcp"],
-      "env": {
-        "MOCO_API_KEY": "your-moco-api-key",
-        "MOCO_SUBDOMAIN": "your-subdomain"
-      }
+      "command": "docker",
+      "args": [
+        "run",
+        "--rm",
+        "-i",
+        "-e", "MOCO_API_KEY=your-moco-api-key",
+        "-e", "MOCO_SUBDOMAIN=your-subdomain",
+        "ghcr.io/migueltvms/moco-mcp-cli:latest"
+      ]
     }
   }
 }
@@ -78,16 +103,19 @@ Add to your Windsurf MCP configuration:
 
 ```json
 {
-   "mcpServers": {
-      "moco": {
-         "command": "npx",
-         "args": ["-y", "@niondigital/moco-mcp"],
-         "env": {
-            "MOCO_API_KEY": "your-moco-api-key",
-            "MOCO_SUBDOMAIN": "your-subdomain"
-         }
-      }
-   }
+  "mcpServers": {
+    "moco": {
+      "command": "docker",
+      "args": [
+        "run",
+        "--rm",
+        "-i",
+        "-e", "MOCO_API_KEY=your-moco-api-key",
+        "-e", "MOCO_SUBDOMAIN=your-subdomain",
+        "ghcr.io/migueltvms/moco-mcp-cli:latest"
+      ]
+    }
+  }
 }
 ```
 
@@ -99,7 +127,13 @@ Add to your Windsurf MCP configuration:
 Add the MCP server to Claude Code:
 
 ```bash
-claude mcp add -e MOCO_API_KEY="your-moco-api-key" -e MOCO_SUBDOMAIN="your-subdomain" moco -- npx -y @niondigital/moco-mcp
+claude mcp add \
+  -e MOCO_API_KEY="your-moco-api-key" \
+  -e MOCO_SUBDOMAIN="your-subdomain" \
+  moco -- docker run --rm -i \
+  -e MOCO_API_KEY="your-moco-api-key" \
+  -e MOCO_SUBDOMAIN="your-subdomain" \
+  ghcr.io/migueltvms/moco-mcp-cli:latest
 ```
 
 </details>
@@ -111,16 +145,19 @@ Configure Gemini CLI with MCP support:
 
 ```json
 {
-   "mcpServers": {
-      "moco": {
-         "command": "npx",
-         "args": ["-y", "@niondigital/moco-mcp"],
-         "env": {
-            "MOCO_API_KEY": "your-moco-api-key",
-            "MOCO_SUBDOMAIN": "your-subdomain"
-         }
-      }
-   }
+  "mcpServers": {
+    "moco": {
+      "command": "docker",
+      "args": [
+        "run",
+        "--rm",
+        "-i",
+        "-e", "MOCO_API_KEY=your-moco-api-key",
+        "-e", "MOCO_SUBDOMAIN=your-subdomain",
+        "ghcr.io/migueltvms/moco-mcp-cli:latest"
+      ]
+    }
+  }
 }
 ```
 
@@ -137,17 +174,19 @@ Configure Gemini CLI with MCP support:
 {
   "mcpServers": {
     "moco": {
-    "command": "npx",
-    "args": [
-      "-y",
-      "@niondigital/moco-mcp"
-    ],
-    "env": {
-       "MOCO_API_KEY": "your-moco-api-key",
-       "MOCO_SUBDOMAIN": "your-subdomain"
-    },
-    "disabled": false,
-    "autoApprove": []
+      "command": "docker",
+      "args": [
+        "run",
+        "--rm",
+        "-i",
+        "-e",
+        "MOCO_API_KEY=your-moco-api-key",
+        "-e",
+        "MOCO_SUBDOMAIN=your-subdomain",
+        "ghcr.io/migueltvms/moco-mcp-cli:latest"
+      ],
+      "disabled": false,
+      "autoApprove": []
     }
   }
 }
@@ -166,8 +205,15 @@ Configure Gemini CLI with MCP support:
 {
   "mcpServers": {
     "moco": {
-      "command": "npx",
-      "args": ["-y", "@niondigital/moco-mcp"],
+      "command": "docker",
+      "args": [
+        "run",
+        "--rm",
+        "-i",
+        "-e", "MOCO_API_KEY=your-moco-api-key",
+        "-e", "MOCO_SUBDOMAIN=your-subdomain",
+        "ghcr.io/migueltvms/moco-mcp-cli:latest"
+      ],
        "env": {
           "MOCO_API_KEY": "your-moco-api-key",
           "MOCO_SUBDOMAIN": "your-subdomain"
@@ -189,7 +235,7 @@ Configure Gemini CLI with MCP support:
 1. **Log into your MOCO account**
 2. **Navigate to API settings:**
    - Go to **Profile** → **Integrations**
-   - Or visit: `https://niondigital.mocoapp.com/profile/integrations`
+  - Or visit: `https://your-subdomain.mocoapp.com/profile/integrations`
 3. **Copy the listed API key**
 4. **Note your subdomain:**
    - From your MOCO URL: `https://yourcompany.mocoapp.com`
@@ -494,13 +540,25 @@ Then configure your MCP client to use the local path:
 <details>
 <summary><strong>Docker Support</strong></summary>
 
-```dockerfile
-FROM node:18-alpine
-WORKDIR /app
-RUN npm install -g @niondigital/moco-mcp
-ENV MOCO_API_KEY=""
-ENV MOCO_SUBDOMAIN=""
-CMD ["@niondigital/moco-mcp"]
+Two container flavours are provided out of the box:
+
+- `Dockerfile` (stdio transport): ideal when your MCP client expects a process that communicates over stdin/stdout.
+- `Dockerfile.http` (HTTP transport): exposes the MCP Streamable HTTP interface for webhook-style integrations.
+
+Build whichever image you need and run it with your MOCO credentials:
+
+```bash
+# stdio (published image)
+docker pull ghcr.io/migueltvms/moco-mcp-cli:latest
+docker run --rm -i -e MOCO_API_KEY=... -e MOCO_SUBDOMAIN=... ghcr.io/migueltvms/moco-mcp-cli:latest
+
+# stdio (build from source)
+docker build -t moco-mcp .
+docker run --rm -i -e MOCO_API_KEY=... -e MOCO_SUBDOMAIN=... moco-mcp
+
+# http
+docker build -f Dockerfile.http -t moco-mcp-http .
+docker run --rm -p 8080:8080 -e MOCO_API_KEY=... -e MOCO_SUBDOMAIN=... moco-mcp-http
 ```
 
 </details>
@@ -524,20 +582,19 @@ MOCO_SUBDOMAIN should only contain the subdomain name
 - Use only the subdomain part: `company` (not `company.mocoapp.com`)
 - Remove `https://` and `.mocoapp.com` from the subdomain
 
-**❌ Node.js Version Error:**
+**❌ Docker Image Not Found:**
 ```
-This package requires Node.js >= 18.0.0
+Unable to find image 'ghcr.io/migueltvms/moco-mcp-cli:latest' locally
 ```
-- Update Node.js to version 18 or higher
-- Check your version: `node --version`
+- Pull the image first: `docker pull ghcr.io/migueltvms/moco-mcp-cli:latest`
+- Or double-check the tag you are referencing in your MCP client configuration.
 
-**❌ npx Connection Issues:**
+**❌ Environment Variables Missing:**
 ```
-Error: Cannot find module '@niondigital/moco-mcp'
+API authentication failed. Please check MOCO_API_KEY.
 ```
-- Ensure you have internet connection
-- Try: `npx --yes @niondigital/moco-mcp`
-- Clear npx cache: `npx clear-npx-cache`
+- Ensure the `-e MOCO_API_KEY=...` and `-e MOCO_SUBDOMAIN=...` flags are present in your `docker run` command.
+- For HTTP deployments, confirm the variables are set in your orchestrator or compose file.
 
 **❌ MCP Client Not Finding Tools:**
 - Restart your MCP client after configuration changes
@@ -549,7 +606,11 @@ Error: Cannot find module '@niondigital/moco-mcp'
 For debugging, you can run the server with additional logging:
 
 ```bash
-NODE_ENV=development npx -y @niondigital/moco-mcp
+docker run --rm -i \
+  -e NODE_ENV=development \
+  -e MOCO_API_KEY="your-moco-api-key" \
+  -e MOCO_SUBDOMAIN="your-subdomain" \
+  ghcr.io/migueltvms/moco-mcp-cli:latest
 ```
 
 ### Testing Connection
@@ -557,7 +618,11 @@ NODE_ENV=development npx -y @niondigital/moco-mcp
 You can test the server manually:
 
 ```bash
-echo '{"jsonrpc": "2.0", "id": 1, "method": "tools/list"}' | npx -y @niondigital/moco-mcp
+printf '{"jsonrpc": "2.0", "id": 1, "method": "tools/list"}' | \
+docker run --rm -i \
+  -e MOCO_API_KEY="your-moco-api-key" \
+  -e MOCO_SUBDOMAIN="your-subdomain" \
+  ghcr.io/migueltvms/moco-mcp-cli:latest
 ```
 
 ## 🌟 Features
@@ -587,3 +652,7 @@ MIT License - see [LICENSE](LICENSE) file for details.
 - **MOCO API Issues:** [MOCO API Documentation](https://github.com/hundertzehn/mocoapp-api-docs)
 - **MCP Protocol:** [MCP Documentation](https://modelcontextprotocol.io/)
 - **This Package:** [GitHub Issues](https://github.com/MiguelTVMS/moco-mcp/issues)
+
+## 🙏 Acknowledgements
+
+This package is based on the original work of David Seibert (nion digital). You can reach the original author at `david.seibert@nion-digital.com` or https://www.nion-digital.com/.

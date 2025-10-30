@@ -14,5 +14,7 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci --omit=dev && npm cache clean --force
 COPY --from=builder /app/dist ./dist
+EXPOSE 8080
+ENV MCP_HTTP_PORT=8080
 USER node
-ENTRYPOINT ["node", "dist/index.js"]
+ENTRYPOINT ["node", "dist/http.js"]
