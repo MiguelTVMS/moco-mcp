@@ -1,6 +1,6 @@
 {
-  "name": "@niondigital/moco-mcp",
-  "version": "1.2.6",
+  "name": "@migueltvms/moco-mcp",
+  "version": "1.3.0",
   "description": "Model Context Protocol (MCP) server for MOCO: time tracking, project management, holidays, and presence monitoring",
   "main": "dist/index.js",
   "bin": {
@@ -13,7 +13,7 @@
     "LICENSE"
   ],
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=22.0.0"
   },
   "scripts": {
     "build": "tsc",
@@ -26,7 +26,9 @@
     "test:unit": "jest tests/unit",
     "test:integration": "jest tests/integration",
     "test:mcp": "jest tests/mcp",
-    "docker:build": "docker build -t moco-mcp ."
+    "docker:build": "docker build -t moco-mcp .",
+    "docker:build:http": "docker build -f Dockerfile.http -t moco-mcp-http .",
+    "lint": "tsc --noEmit"
   },
   "keywords": [
     "mcp",
@@ -40,9 +42,9 @@
     "assistant"
   ],
   "author": {
-    "name": "David Seibert, nion digital",
-    "email": "david.seibert@nion-digital.com",
-    "url": "https://www.nion-digital.com/"
+    "name": "João Miguel Tabosa Vaz Marques Silva",
+    "email": "joao@miguel.ms",
+    "url": "https://github.com/MiguelTVMS"
   },
   "license": "MIT",
   "homepage": "https://github.com/MiguelTVMS/moco-mcp#readme",
@@ -54,16 +56,19 @@
     "url": "https://github.com/MiguelTVMS/moco-mcp/issues"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.17.1",
-    "zod": "^3.25.76"
+    "@modelcontextprotocol/sdk": "^1.20.2",
+    "zod": "^3.25.76",
+    "zod-to-json-schema": "^3.24.6"
   },
   "devDependencies": {
     "@jest/globals": "^29.7.0",
     "@types/jest": "^30.0.0",
-    "@types/node": "^24.2.0",
+    "@types/node": "^24.9.2",
+    "@types/supertest": "^2.0.16",
     "jest": "^29.7.0",
-    "ts-jest": "^29.4.1",
-    "tsx": "^4.20.3",
-    "typescript": "^5.9.2"
+    "supertest": "^7.0.0",
+    "ts-jest": "^29.4.5",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3"
   }
 }
