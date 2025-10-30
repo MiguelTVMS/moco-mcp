@@ -6,6 +6,7 @@
  * project management, holiday tracking, and presence monitoring
  */
 
+import { pathToFileURL } from "node:url";
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import {
@@ -31,7 +32,7 @@ import { MOCO_PROMPTS, getMocoPromptByName } from './prompts/mocoPrompts.js';
 /**
  * Available MCP tools for MoCo API access
  */
-const AVAILABLE_TOOLS = [
+export const AVAILABLE_TOOLS = [
   getActivitiesTool,
   getUserProjectsTool,
   getUserProjectTasksTool,
@@ -40,157 +41,162 @@ const AVAILABLE_TOOLS = [
   getUserSickDaysTool,
   getPublicHolidaysTool
 ];
+export { MOCO_PROMPTS };
 
-const server = new Server(
-  {
-    name: "moco-mcp",
-    version: "1.0.0",
-  },
-  {
-    capabilities: {
-      tools: {}, // We support tools
-      resources: {}, // No resources currently
-      prompts: {}, // We support prompts
+export function createMocoServer(): Server {
+  const server = new Server(
+    {
+      name: "moco-mcp",
+      version: "1.0.0",
     },
-  }
-);
+    {
+      capabilities: {
+        tools: {}, // We support tools
+        resources: {}, // No resources currently
+        prompts: {}, // We support prompts
+      },
+    }
+  );
 
-/**
- * Handle resource listing - currently no resources provided
- */
-server.setRequestHandler(ListResourcesRequestSchema, async () => {
-  return {
-    resources: [],
-  };
-});
+  /**
+   * Handle resource listing - currently no resources provided
+   */
+  server.setRequestHandler(ListResourcesRequestSchema, async () => {
+    return {
+      resources: [],
+    };
+  });
 
-/**
- * Handle resource reading - currently no resources provided
- */
-server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
-  throw new Error(`Resource not found: ${request.params.uri}`);
-});
+  /**
+   * Handle resource reading - currently no resources provided
+   */
+  server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
+    throw new Error(`Resource not found: ${request.params.uri}`);
+  });
 
-/**
- * Handle prompt listing - return all available MoCo prompts
- */
-server.setRequestHandler(ListPromptsRequestSchema, async () => {
-  return {
-    prompts: MOCO_PROMPTS.map(prompt => ({
-      name: prompt.name,
-      description: prompt.description,
-      arguments: prompt.arguments
-    }))
-  };
-});
+  /**
+   * Handle prompt listing - return all available MoCo prompts
+   */
+  server.setRequestHandler(ListPromptsRequestSchema, async () => {
+    return {
+      prompts: MOCO_PROMPTS.map(prompt => ({
+        name: prompt.name,
+        description: prompt.description,
+        arguments: prompt.arguments
+      }))
+    };
+  });
 
-/**
- * Handle prompt retrieval - return specific prompt template
- */
-server.setRequestHandler(GetPromptRequestSchema, async (request) => {
-  const { name, arguments: args } = request.params;
-  
-  const prompt = getMocoPromptByName(name);
-  if (!prompt) {
-    throw new Error(`Prompt not found: ${name}`);
-  }
-
-  // Generate prompt template based on the specific prompt type
-  let template = '';
-  
-  switch (name) {
-    case 'weekly_time_report':
-      template = generateWeeklyTimeReportPrompt(args);
-      break;
-    case 'vacation_planning_assistant':
-      template = generateVacationPlanningPrompt(args);
-      break;
-    case 'personal_productivity_insights':
-      template = generateProductivityInsightsPrompt(args);
-      break;
-    case 'monthly_business_review':
-      template = generateMonthlyBusinessReviewPrompt(args);
-      break;
-    case 'smart_work_life_balance_advisor':
-      template = generateWorkLifeBalancePrompt(args);
-      break;
-    case 'project_time_analysis':
-      template = generateProjectTimeAnalysisPrompt(args);
-      break;
-    case 'team_capacity_overview':
-      template = generateTeamCapacityPrompt(args);
-      break;
-    case 'work_hours_compliance_check':
-      template = generateComplianceCheckPrompt(args);
-      break;
-    default:
-      throw new Error(`Prompt template not implemented: ${name}`);
-  }
-
-  return {
-    description: prompt.description,
-    messages: [
-      {
-        role: "user",
-        content: {
-          type: "text",
-          text: template
-        }
-      }
-    ]
-  };
-});
-
-/**
- * Handle tool listing - return all available MoCo tools
- */
-server.setRequestHandler(ListToolsRequestSchema, async () => {
-  return {
-    tools: AVAILABLE_TOOLS.map(tool => ({
-      name: tool.name,
-      description: tool.description,
-      inputSchema: tool.inputSchema
-    }))
-  };
-});
-
-/**
- * Handle tool execution - dispatch to appropriate tool handler
- */
-server.setRequestHandler(CallToolRequestSchema, async (request) => {
-  const { name, arguments: args } = request.params;
-  
-  // Find the requested tool
-  const tool = AVAILABLE_TOOLS.find(t => t.name === name);
-  
-  if (!tool) {
-    throw new Error(`Tool not found: ${name}`);
-  }
-
-  try {
-    // Execute the tool with provided arguments
-    const result = await tool.handler(args as any || {});
+  /**
+   * Handle prompt retrieval - return specific prompt template
+   */
+  server.setRequestHandler(GetPromptRequestSchema, async (request) => {
+    const { name, arguments: args } = request.params;
     
+    const prompt = getMocoPromptByName(name);
+    if (!prompt) {
+      throw new Error(`Prompt not found: ${name}`);
+    }
+
+    // Generate prompt template based on the specific prompt type
+    let template = '';
+    
+    switch (name) {
+      case 'weekly_time_report':
+        template = generateWeeklyTimeReportPrompt(args);
+        break;
+      case 'vacation_planning_assistant':
+        template = generateVacationPlanningPrompt(args);
+        break;
+      case 'personal_productivity_insights':
+        template = generateProductivityInsightsPrompt(args);
+        break;
+      case 'monthly_business_review':
+        template = generateMonthlyBusinessReviewPrompt(args);
+        break;
+      case 'smart_work_life_balance_advisor':
+        template = generateWorkLifeBalancePrompt(args);
+        break;
+      case 'project_time_analysis':
+        template = generateProjectTimeAnalysisPrompt(args);
+        break;
+      case 'team_capacity_overview':
+        template = generateTeamCapacityPrompt(args);
+        break;
+      case 'work_hours_compliance_check':
+        template = generateComplianceCheckPrompt(args);
+        break;
+      default:
+        throw new Error(`Prompt template not implemented: ${name}`);
+    }
+
     return {
-      content: [
+      description: prompt.description,
+      messages: [
         {
-          type: "text",
-          text: result
+          role: "user",
+          content: {
+            type: "text",
+            text: template
+          }
         }
       ]
     };
-  } catch (error) {
-    // Return error as text response rather than throwing
+  });
+
+  /**
+   * Handle tool listing - return all available MoCo tools
+   */
+  server.setRequestHandler(ListToolsRequestSchema, async () => {
     return {
-      content: [
-        {
-          type: "text", 
-          text: `Error executing tool ${name}: ${error instanceof Error ? error.message : 'Unknown error'}`
-        }
-      ]
+      tools: AVAILABLE_TOOLS.map(tool => ({
+        name: tool.name,
+        description: tool.description,
+        inputSchema: tool.inputSchema
+      }))
     };
-  }
-});
+  });
+
+  /**
+   * Handle tool execution - dispatch to appropriate tool handler
+   */
+  server.setRequestHandler(CallToolRequestSchema, async (request) => {
+    const { name, arguments: args } = request.params;
+    
+    // Find the requested tool
+    const tool = AVAILABLE_TOOLS.find(t => t.name === name);
+    
+    if (!tool) {
+      throw new Error(`Tool not found: ${name}`);
+    }
+
+    try {
+      // Execute the tool with provided arguments
+      const result = await tool.handler(args as any || {});
+      
+      return {
+        content: [
+          {
+            type: "text",
+            text: result
+          }
+        ]
+      };
+    } catch (error) {
+      // Return error as text response rather than throwing
+      return {
+        content: [
+          {
+            type: "text", 
+            text: `Error executing tool ${name}: ${error instanceof Error ? error.message : 'Unknown error'}`
+          }
+        ]
+      };
+    }
+  });
+
+  return server;
+}
 
 // Prompt template generation functions
 function generateWeeklyTimeReportPrompt(args: any): string {
@@ -414,6 +420,7 @@ Provide a clear compliance status report with specific violations identified and
  */
 async function main() {
   try {
+    const server = createMocoServer();
     const transport = new StdioServerTransport();
     await server.connect(transport);
     console.error("MoCo MCP Server running on stdio");
@@ -425,8 +432,21 @@ async function main() {
   }
 }
 
-// Start the server
-main().catch((error) => {
-  console.error("Server error:", error);
-  process.exit(1);
-});
+const isCliEntry = (() => {
+  const entryPoint = process.argv?.[1];
+  if (!entryPoint) {
+    return false;
+  }
+  try {
+    return import.meta.url === pathToFileURL(entryPoint).href;
+  } catch {
+    return false;
+  }
+})();
+
+if (isCliEntry) {
+  main().catch((error) => {
+    console.error("Server error:", error);
+    process.exit(1);
+  });
+}
