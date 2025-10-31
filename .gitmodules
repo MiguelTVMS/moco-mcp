@@ -1,0 +1,5 @@
+[submodule "docs"]
+	path = docs
+	url = https://github.com/everii-Group/mocoapp-api-docs.git
+	branch = master
+	ignore = all

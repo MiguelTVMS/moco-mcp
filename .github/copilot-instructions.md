@@ -59,14 +59,21 @@ Welcome! This repository implements a Model Context Protocol (MCP) server for th
 - Respect existing TypeScript strictness—prefer explicit types and handle error cases gracefully using utilities like `errorHandler`.
 
 ## Development Workflow
+
 - Commit changes with clear messages referencing relevant issues.
 - Open pull requests against the `develop` branch for review.
 - Ensure all tests pass and linting checks complete before merging.
 
-## Aditional Guidelines
+## Additional Guidelines
+
 - When new environment variables are introduced, ensure they are documented in `.env.example` and `README.md`.
 - For any modifications to the HTTP transport, validate changes with appropriate tests in `tests/http/`.
 - Use the existing logging utility for any new logging requirements to maintain consistency.
 - All the environment variables used in the project should be read through the configuration helpers located in `src/config/environment.ts` to ensure centralized management.
+
+## Documentation References
+
+- The folder `docs/` is a git submodule containing the official MOCO API documentation. Refer to it for any API-specific details when implementing or updating service clients.
+- Each API has its own section in the `docs/sections` directory in the documentation. Make sure to link to the relevant sections when adding new features or updating existing ones.
 
 Following these guidelines will help ensure Copilot suggestions stay aligned with project standards and that the codebase remains reliable and well-documented. Happy hacking! 🚀

@@ -25,6 +25,7 @@ import { getUserHolidaysTool } from './tools/userHolidaysTools.js';
 import { getUserPresencesTool } from './tools/userPresencesTools.js';
 import { getUserSickDaysTool } from './tools/userSickDaysTools.js';
 import { getPublicHolidaysTool } from './tools/publicHolidaysTools.js';
+import { searchUsersTool } from './tools/userTools.js';
 
 // Import MCP prompts
 import { MOCO_PROMPTS, getMocoPromptByName } from './prompts/mocoPrompts.js';
@@ -36,6 +37,7 @@ export const AVAILABLE_TOOLS = [
   getActivitiesTool,
   getUserProjectsTool,
   getUserProjectTasksTool,
+  searchUsersTool,
   getUserHolidaysTool,
   getUserPresencesTool,
   getUserSickDaysTool,

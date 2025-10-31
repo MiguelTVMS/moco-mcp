@@ -39,28 +39,28 @@ function createHttpErrorMessage(statusCode: number): string {
   switch (statusCode) {
     case 400:
       return 'Invalid parameters. Please check your inputs.';
-    
+
     case 401:
       return 'API authentication failed. Please check MOCO_API_KEY.';
-    
+
     case 403:
       return 'Access denied. Please check your API permissions.';
-    
+
     case 404:
       return 'Resource not found. Please check the provided IDs.';
-    
+
     case 422:
       return 'Invalid data. Please check date formats and value ranges.';
-    
+
     case 429:
       return 'API limit reached. Please try again in a few seconds.';
-    
+
     case 500:
     case 502:
     case 503:
     case 504:
       return 'MoCo server error. Please try again later.';
-    
+
     default:
       return `HTTP error ${statusCode}. Please contact support.`;
   }
@@ -77,26 +77,26 @@ export function createValidationErrorMessage(error: {
   reason: string;
 }): string {
   const { field, value, reason } = error;
-  
+
   switch (reason) {
     case 'invalid_date_format':
       return `Invalid date format for ${field}: "${value}". Expected: YYYY-MM-DD (e.g. 2024-01-15)`;
-    
+
     case 'invalid_date_range':
       return `Invalid date range: Start date must be before or equal to end date.`;
-    
+
     case 'invalid_year':
       return `Invalid year: "${value}". Years between 2000 and ${new Date().getFullYear() + 1} are allowed.`;
-    
+
     case 'missing_parameter':
       return `Required parameter missing: ${field}`;
-    
+
     case 'invalid_project_id':
       return `Invalid project ID: "${value}". Project ID must be a positive number.`;
-    
+
     case 'empty_search_query':
       return `Search query cannot be empty.`;
-    
+
     default:
       return `Validation error for ${field}: ${reason}`;
   }
@@ -108,7 +108,7 @@ export function createValidationErrorMessage(error: {
  * @returns User-friendly message in English
  */
 export function createEmptyResultMessage(context: {
-  type: 'activities' | 'projects' | 'tasks' | 'holidays' | 'presences' | 'public_holidays';
+  type: 'activities' | 'projects' | 'tasks' | 'holidays' | 'presences' | 'public_holidays' | 'users';
   startDate?: string;
   endDate?: string;
   year?: number;
@@ -116,25 +116,30 @@ export function createEmptyResultMessage(context: {
   query?: string;
 }): string {
   const { type, startDate, endDate, year, projectId, query } = context;
-  
+
   switch (type) {
     case 'activities':
       return `No activities found in the period ${startDate} to ${endDate}.`;
-    
+
     case 'projects':
-      return query 
+      return query
         ? `No projects found for search term "${query}".`
         : 'No projects found.';
-    
+
     case 'tasks':
       return `No tasks found for project ${projectId}.`;
-    
+
     case 'holidays':
       return `No holidays found for year ${year}.`;
-    
+
     case 'presences':
       return `No presences found in the period ${startDate} to ${endDate}.`;
-    
+
+    case 'users':
+      return query
+        ? `No users found for search term "${query}".`
+        : 'No users found.';
+
     default:
       return 'No results found.';
   }

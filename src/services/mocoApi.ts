@@ -11,6 +11,7 @@ import type {
   Activity,
   Project,
   Task,
+  User,
   UserHoliday,
   UserPresence
 } from '../types/mocoTypes.js';
@@ -294,6 +295,80 @@ export class MocoApiService {
       project.name.toLowerCase().includes(lowerQuery) ||
       (project.description && project.description.toLowerCase().includes(lowerQuery))
     );
+  }
+
+  /**
+   * Searches staff directory by matching against name, email, tags, unit, or role
+   * @param query - Search query string
+   * @param options - Optional search filters
+   * @returns Promise with array of matching users
+   */
+  async searchUsers(
+    query: string,
+    options: { includeArchived?: boolean; tags?: string[] } = {}
+  ): Promise<User[]> {
+    const { includeArchived = false, tags } = options;
+
+    const params: Record<string, string | number> = {};
+    if (includeArchived) {
+      params.include_archived = 'true';
+    }
+    if (tags && tags.length > 0) {
+      params.tags = tags.join(',');
+    }
+
+    const allUsers = await this.fetchAllPages<User>('/users', params);
+    const normalizedQuery = query.trim().toLowerCase();
+
+    if (normalizedQuery.length === 0) {
+      return allUsers;
+    }
+
+    return allUsers.filter(user => {
+      const searchTargets: string[] = [];
+
+      if (user.firstname) {
+        searchTargets.push(user.firstname);
+      }
+      if (user.lastname) {
+        searchTargets.push(user.lastname);
+      }
+
+      const fullName = `${user.firstname ?? ''} ${user.lastname ?? ''}`.trim();
+      if (fullName.length > 0) {
+        searchTargets.push(fullName);
+      }
+
+      if (user.email) {
+        searchTargets.push(user.email);
+      }
+
+      if (user.info) {
+        searchTargets.push(user.info);
+      }
+
+      if (user.tags && user.tags.length > 0) {
+        searchTargets.push(user.tags.join(' '));
+      }
+
+      if (user.unit?.name) {
+        searchTargets.push(user.unit.name);
+      }
+
+      if (user.role?.name) {
+        searchTargets.push(user.role.name);
+      }
+
+      if (user.mobile_phone) {
+        searchTargets.push(user.mobile_phone);
+      }
+
+      if (user.work_phone) {
+        searchTargets.push(user.work_phone);
+      }
+
+      return searchTargets.some(target => target.toLowerCase().includes(normalizedQuery));
+    });
   }
 
   /**
