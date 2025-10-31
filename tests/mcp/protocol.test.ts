@@ -124,7 +124,7 @@ describe('MCP Protocol Compliance', () => {
 
     it('should handle invalid JSON-RPC requests', async () => {
       const invalidRequest = { method: 'test', id: 999 }; // Missing jsonrpc
-      
+
       return new Promise((resolve) => {
         let responseData = '';
         const timeout = setTimeout(() => {
@@ -138,7 +138,7 @@ describe('MCP Protocol Compliance', () => {
             if (response.id === 999) {
               clearTimeout(timeout);
               serverProcess.stdout!.off('data', onData);
-              
+
               // Should be an error response
               expect(response).toMatchObject({
                 jsonrpc: '2.0',
@@ -214,6 +214,11 @@ describe('MCP Protocol Compliance', () => {
               inputSchema: expect.any(Object)
             }),
             expect.objectContaining({
+              name: 'search_users',
+              description: expect.any(String),
+              inputSchema: expect.any(Object)
+            }),
+            expect.objectContaining({
               name: 'get_user_holidays',
               description: expect.any(String),
               inputSchema: expect.any(Object)
@@ -227,8 +232,8 @@ describe('MCP Protocol Compliance', () => {
         }
       });
 
-      // Verify we have exactly 7 tools  
-      expect(response.result.tools).toHaveLength(7);
+      // Verify we have exactly 8 tools  
+      expect(response.result.tools).toHaveLength(8);
     });
 
     it('should validate tool input schemas', async () => {
@@ -331,6 +336,28 @@ describe('MCP Protocol Compliance', () => {
     });
 
     it('should handle get_user_project_tasks tool call', async () => {
+      it('should handle search_users tool call', async () => {
+        const response = await sendRequest('tools/call', {
+          name: 'search_users',
+          arguments: {
+            query: 'doe'
+          }
+        });
+
+        expect(response).toMatchObject({
+          jsonrpc: '2.0',
+          id: expect.any(Number),
+          result: {
+            content: [
+              {
+                type: 'text',
+                text: expect.any(String)
+              }
+            ]
+          }
+        });
+      });
+
       const response = await sendRequest('tools/call', {
         name: 'get_user_project_tasks',
         arguments: {

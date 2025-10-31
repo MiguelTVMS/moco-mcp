@@ -10,6 +10,8 @@ export interface MocoConfig {
   subdomain: string;
   /** Complete base URL for MoCo API requests */
   baseUrl: string;
+  /** Default cache TTL for MoCo API list responses (seconds) */
+  cacheTtlSeconds: number;
 }
 
 export interface HttpServerConfig {
@@ -37,6 +39,7 @@ const DEFAULT_HTTP_BASE_PATH = "/mcp";
 const DEFAULT_HTTP_SESSION_STATEFUL = false;
 const DEFAULT_LOG_LEVEL: LogLevel = "info";
 const DEFAULT_NGROK_ENABLED = false;
+const DEFAULT_CACHE_TTL_SECONDS = 300; // 5 minutes
 
 /**
  * Retrieves and validates MoCo configuration from environment variables
@@ -46,6 +49,7 @@ const DEFAULT_NGROK_ENABLED = false;
 export function getMocoConfig(): MocoConfig {
   const apiKey = process.env.MOCO_API_KEY;
   const subdomain = process.env.MOCO_SUBDOMAIN;
+  const cacheTtlEnv = process.env.MOCO_API_CACHE_TIME;
 
   if (!apiKey) {
     throw new Error('MOCO_API_KEY environment variable is required');
@@ -60,10 +64,23 @@ export function getMocoConfig(): MocoConfig {
     throw new Error('MOCO_SUBDOMAIN should only contain the subdomain name (e.g., "yourcompany", not "yourcompany.mocoapp.com")');
   }
 
+  let cacheTtlSeconds = DEFAULT_CACHE_TTL_SECONDS;
+
+  if (cacheTtlEnv !== undefined) {
+    const parsed = Number.parseInt(cacheTtlEnv, 10);
+
+    if (Number.isNaN(parsed) || parsed < 0) {
+      throw new Error('MOCO_API_CACHE_TIME must be a non-negative integer representing seconds.');
+    }
+
+    cacheTtlSeconds = parsed;
+  }
+
   return {
     apiKey,
     subdomain,
-    baseUrl: `https://${subdomain}.mocoapp.com/api/v1`
+    baseUrl: `https://${subdomain}.mocoapp.com/api/v1`,
+    cacheTtlSeconds
   };
 }
 

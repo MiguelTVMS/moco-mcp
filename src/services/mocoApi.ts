@@ -7,10 +7,12 @@
 import { getMocoConfig } from '../config/environment.js';
 import { handleMocoApiError } from '../utils/errorHandler.js';
 import { logger } from '../utils/logger.js';
+import { cache } from '../utils/cache.js';
 import type {
   Activity,
   Project,
   Task,
+  User,
   UserHoliday,
   UserPresence
 } from '../types/mocoTypes.js';
@@ -252,6 +254,43 @@ export class MocoApiService {
     return allItems;
   }
 
+  private async getCachedProjects(): Promise<Project[]> {
+    return cache.getOrSet<Project[]>(
+      'projects:assigned',
+      this.config.cacheTtlSeconds,
+      () => this.fetchAllPages<Project>('/projects/assigned')
+    );
+  }
+
+  private async getCachedUsers(includeArchived: boolean, tags?: string[]): Promise<User[]> {
+    const normalizedTags = tags
+      ?.map(tag => tag.trim())
+      .filter(Boolean)
+      .sort((a, b) => a.localeCompare(b));
+
+    const cacheKeyParts = [
+      'users',
+      includeArchived ? '1' : '0',
+      normalizedTags && normalizedTags.length > 0 ? normalizedTags.join('|') : '-'
+    ];
+
+    const cacheKey = cacheKeyParts.join(':');
+
+    const params: Record<string, string> = {};
+    if (includeArchived) {
+      params.include_archived = 'true';
+    }
+    if (normalizedTags && normalizedTags.length > 0) {
+      params.tags = normalizedTags.join(',');
+    }
+
+    return cache.getOrSet<User[]>(
+      cacheKey,
+      this.config.cacheTtlSeconds,
+      () => this.fetchAllPages<User>('/users', params)
+    );
+  }
+
   /**
    * Retrieves activities for the current user within a date range
    * @param startDate - Start date in ISO 8601 format (YYYY-MM-DD)
@@ -287,7 +326,7 @@ export class MocoApiService {
    */
   async searchProjects(query: string): Promise<Project[]> {
     // Get all projects and filter client-side since MoCo API doesn't have text search
-    const allProjects = await this.getProjects();
+    const allProjects = await this.getCachedProjects();
 
     const lowerQuery = query.toLowerCase();
     return allProjects.filter(project =>
@@ -297,13 +336,79 @@ export class MocoApiService {
   }
 
   /**
+   * Searches staff directory by matching against name, email, tags, unit, or role
+   * @param query - Search query string
+   * @param options - Optional search filters
+   * @returns Promise with array of matching users
+   */
+  async searchUsers(
+    query: string,
+    options: { includeArchived?: boolean; tags?: string[] } = {}
+  ): Promise<User[]> {
+    const { includeArchived = false, tags } = options;
+
+    const allUsers = await this.getCachedUsers(includeArchived, tags);
+    const normalizedQuery = query.trim().toLowerCase();
+
+    if (normalizedQuery.length === 0) {
+      return allUsers;
+    }
+
+    return allUsers.filter(user => {
+      const searchTargets: string[] = [];
+
+      if (user.firstname) {
+        searchTargets.push(user.firstname);
+      }
+      if (user.lastname) {
+        searchTargets.push(user.lastname);
+      }
+
+      const fullName = `${user.firstname ?? ''} ${user.lastname ?? ''}`.trim();
+      if (fullName.length > 0) {
+        searchTargets.push(fullName);
+      }
+
+      if (user.email) {
+        searchTargets.push(user.email);
+      }
+
+      if (user.info) {
+        searchTargets.push(user.info);
+      }
+
+      if (user.tags && user.tags.length > 0) {
+        searchTargets.push(user.tags.join(' '));
+      }
+
+      if (user.unit?.name) {
+        searchTargets.push(user.unit.name);
+      }
+
+      if (user.role?.name) {
+        searchTargets.push(user.role.name);
+      }
+
+      if (user.mobile_phone) {
+        searchTargets.push(user.mobile_phone);
+      }
+
+      if (user.work_phone) {
+        searchTargets.push(user.work_phone);
+      }
+
+      return searchTargets.some(target => target.toLowerCase().includes(normalizedQuery));
+    });
+  }
+
+  /**
    * Retrieves all tasks for a specific assigned project
    * @param projectId - Project ID (must be assigned to current user)
    * @returns Promise with array of tasks
    */
   async getProjectTasks(projectId: number): Promise<Task[]> {
     // Get all assigned projects
-    const assignedProjects = await this.getProjects();
+    const assignedProjects = await this.getCachedProjects();
 
     // Find the specific project
     const project = assignedProjects.find(p => p.id === projectId);

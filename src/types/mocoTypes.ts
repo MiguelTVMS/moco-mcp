@@ -124,6 +124,23 @@ export interface User {
   lastname: string;
   email: string;
   active: boolean;
+  extern?: boolean;
+  language?: string;
+  mobile_phone?: string;
+  work_phone?: string;
+  info?: string;
+  tags?: string[];
+  custom_properties?: Record<string, unknown>;
+  unit?: {
+    id: number;
+    name: string;
+  };
+  role?: {
+    id: number;
+    name: string;
+  };
+  avatar_url?: string;
+  birthday?: string; // ISO 8601 format (YYYY-MM-DD)
   holiday_entitlement?: number; // Annual holiday entitlement in hours
   created_at: string;
   updated_at: string;
