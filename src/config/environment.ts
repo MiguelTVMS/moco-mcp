@@ -35,7 +35,7 @@ export type LogLevel = "debug" | "info" | "warn" | "error";
 
 const DEFAULT_HTTP_PORT = 8080;
 const DEFAULT_HTTP_HOST = "0.0.0.0";
-const DEFAULT_HTTP_BASE_PATH = "/mcp";
+const DEFAULT_HTTP_BASE_PATH = "/sse";
 const DEFAULT_HTTP_SESSION_STATEFUL = false;
 const DEFAULT_LOG_LEVEL: LogLevel = "info";
 const DEFAULT_NGROK_ENABLED = false;

@@ -2,6 +2,7 @@ import { createServer, type IncomingMessage, type Server as NodeHttpServer } fro
 import { randomUUID } from "node:crypto";
 import path from "node:path";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
+import { ListToolsRequestSchema } from "@modelcontextprotocol/sdk/types.js";
 import { connect, type Listener } from "@ngrok/ngrok";
 import { AVAILABLE_TOOLS, MOCO_PROMPTS, createMocoServer } from "./index.js";
 import { getHttpServerConfig, normalizeHttpBasePath } from "./config/environment.js";
@@ -36,6 +37,20 @@ export async function startHttpServer(options: StartHttpServerOptions = {}): Pro
   const allowedOrigins = envConfig.allowedOrigins;
 
   const mcpServer = createMocoServer();
+
+  const cachedToolsList = Object.freeze(
+    AVAILABLE_TOOLS.map((tool) =>
+      Object.freeze({
+        name: tool.name,
+        description: tool.description,
+        inputSchema: tool.inputSchema,
+      })
+    )
+  );
+
+  mcpServer.setRequestHandler(ListToolsRequestSchema, async () => ({
+    tools: cachedToolsList,
+  }));
   const transport = new StreamableHTTPServerTransport({
     sessionIdGenerator: sessionStateful ? () => randomUUID() : undefined,
     enableJsonResponse: true,

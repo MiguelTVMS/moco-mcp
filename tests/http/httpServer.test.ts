@@ -7,7 +7,7 @@ import request from 'supertest';
 import { LATEST_PROTOCOL_VERSION } from '@modelcontextprotocol/sdk/types.js';
 import { startHttpServer } from '../../src/http';
 
-const BASE_PATH = '/mcp';
+const BASE_PATH = '/sse';
 
 async function createServer(options: Partial<Parameters<typeof startHttpServer>[0]> = {}) {
   return startHttpServer({

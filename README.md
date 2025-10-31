@@ -27,7 +27,7 @@ docker run --rm -p 8080:8080 \
   moco-mcp-http
 ```
 
-The HTTP server exposes the MCP Streamable HTTP transport on `http://localhost:8080/mcp`.
+The HTTP server exposes the MCP Streamable HTTP transport on `http://localhost:8080/sse`.
 
 ## 🚀 Installation
 
@@ -579,7 +579,7 @@ Create a secure tunnel so external MCP clients can reach your local HTTP server.
   npm run tunnel:http
   ```
 
-The script (or automatic tunnel) prints a public URL (e.g. `https://something.ngrok.app`) that forwards to `http://localhost:8080/mcp`. Use that URL in your remote MCP client configuration. Stop the tunnel anytime with `Ctrl+C`.
+The script (or automatic tunnel) prints a public URL (e.g. `https://something.ngrok.app`) that forwards to `http://localhost:8080/sse`. Use that URL in your remote MCP client configuration. Stop the tunnel anytime with `Ctrl+C`.
 
 </details>
 
