@@ -9,8 +9,13 @@ import { startHttpServer } from '../../src/http';
 
 const BASE_PATH = '/mcp';
 
-async function createServer() {
-  return startHttpServer({ port: 0, handleSignals: false, path: BASE_PATH });
+async function createServer(options: Partial<Parameters<typeof startHttpServer>[0]> = {}) {
+  return startHttpServer({
+    port: 0,
+    handleSignals: false,
+    path: BASE_PATH,
+    ...options
+  });
 }
 
 const ACCEPT_HEADER = 'application/json, text/event-stream';
@@ -22,12 +27,17 @@ function createBaseHeaders() {
   } as Record<string, string>;
 }
 
-function createSessionHeaders(sessionId: string, protocolVersion: string) {
-  return {
+function createSessionHeaders(protocolVersion: string, sessionId?: string) {
+  const headers: Record<string, string> = {
     ...createBaseHeaders(),
-    'Mcp-Session-Id': sessionId,
     'Mcp-Protocol-Version': protocolVersion
   };
+
+  if (sessionId) {
+    headers['Mcp-Session-Id'] = sessionId;
+  }
+
+  return headers;
 }
 
 async function performInitialization(server: Awaited<ReturnType<typeof createServer>>) {
@@ -48,13 +58,13 @@ async function performInitialization(server: Awaited<ReturnType<typeof createSer
   expect(initResponse.status).toBe(200);
   expect(initResponse.body?.result?.serverInfo?.name).toBe('moco-mcp');
 
-  const sessionId = initResponse.headers['mcp-session-id'];
-  expect(sessionId).toBeDefined();
-
   const negotiatedProtocol = initResponse.body?.result?.protocolVersion as string | undefined;
   expect(typeof negotiatedProtocol).toBe('string');
 
-  return { sessionId: sessionId as string, protocolVersion: negotiatedProtocol as string };
+  const sessionIdHeader = initResponse.headers['mcp-session-id'];
+  const sessionId = Array.isArray(sessionIdHeader) ? sessionIdHeader[0] : sessionIdHeader;
+
+  return { sessionId: sessionId ?? undefined, protocolVersion: negotiatedProtocol as string };
 }
 
 let consoleErrorSpy: jest.SpiedFunction<typeof console.error>;
@@ -67,15 +77,15 @@ afterEach(() => {
   consoleErrorSpy.mockRestore();
 });
 
-describe('HTTP MCP server', () => {
+describe('HTTP MCP server (stateless sessions)', () => {
   it('performs initialization handshake and lists tools and prompts', async () => {
-    const controls = await createServer();
+    const controls = await createServer({ sessionStateful: false });
     try {
       const { sessionId, protocolVersion } = await performInitialization(controls);
 
       const initializedResponse = await request(controls.httpServer)
         .post(BASE_PATH)
-        .set(createSessionHeaders(sessionId, protocolVersion))
+        .set(createSessionHeaders(protocolVersion, sessionId))
         .send({
           jsonrpc: '2.0',
           method: 'initialized',
@@ -86,7 +96,7 @@ describe('HTTP MCP server', () => {
 
       const toolsResponse = await request(controls.httpServer)
         .post(BASE_PATH)
-        .set(createSessionHeaders(sessionId, protocolVersion))
+        .set(createSessionHeaders(protocolVersion, sessionId))
         .send({
           jsonrpc: '2.0',
           id: 2,
@@ -104,7 +114,7 @@ describe('HTTP MCP server', () => {
 
       const promptsResponse = await request(controls.httpServer)
         .post(BASE_PATH)
-        .set(createSessionHeaders(sessionId, protocolVersion))
+        .set(createSessionHeaders(protocolVersion, sessionId))
         .send({
           jsonrpc: '2.0',
           id: 3,
@@ -121,7 +131,7 @@ describe('HTTP MCP server', () => {
   });
 
   it('rejects GET requests without the required Accept header', async () => {
-    const controls = await createServer();
+    const controls = await createServer({ sessionStateful: false });
     try {
       const response = await request(controls.httpServer).get(BASE_PATH);
 
@@ -132,22 +142,8 @@ describe('HTTP MCP server', () => {
     }
   });
 
-  it('rejects GET requests before initialization when session headers are missing', async () => {
-    const controls = await createServer();
-    try {
-      const response = await request(controls.httpServer)
-        .get(BASE_PATH)
-        .set('Accept', 'text/event-stream');
-
-      expect(response.status).toBe(400);
-      expect(response.text).toContain('Server not initialized');
-    } finally {
-      await controls.shutdown();
-    }
-  });
-
   it('returns 406 when POST requests do not advertise both accepted content types', async () => {
-    const controls = await createServer();
+    const controls = await createServer({ sessionStateful: false });
     try {
       const response = await request(controls.httpServer)
         .post(BASE_PATH)
@@ -162,7 +158,7 @@ describe('HTTP MCP server', () => {
   });
 
   it('returns 404 for requests outside the configured base path', async () => {
-    const controls = await createServer();
+    const controls = await createServer({ sessionStateful: false });
     try {
       const response = await request(controls.httpServer)
         .post('/wrong-path')
@@ -182,14 +178,30 @@ describe('HTTP MCP server', () => {
   });
 
   it('shuts down cleanly via the exposed shutdown helper', async () => {
-    const controls = await createServer();
+    const controls = await createServer({ sessionStateful: false });
     await controls.shutdown();
 
     expect(controls.httpServer.listening).toBe(false);
   });
+});
+
+describe('HTTP MCP server (stateful sessions)', () => {
+  it('requires session headers for event streams before initialization', async () => {
+    const controls = await createServer({ sessionStateful: true });
+    try {
+      const response = await request(controls.httpServer)
+        .get(BASE_PATH)
+        .set('Accept', 'text/event-stream');
+
+      expect(response.status).toBe(400);
+      expect(response.text).toContain('Server not initialized');
+    } finally {
+      await controls.shutdown();
+    }
+  });
 
   it('rejects POST requests missing session headers after initialization', async () => {
-    const controls = await createServer();
+    const controls = await createServer({ sessionStateful: true });
     try {
       const { protocolVersion } = await performInitialization(controls);
 

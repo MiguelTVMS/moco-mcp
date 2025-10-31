@@ -2,6 +2,7 @@ import { createServer, type IncomingMessage, type Server as NodeHttpServer } fro
 import { randomUUID } from "node:crypto";
 import path from "node:path";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
+import { connect, type Listener } from "@ngrok/ngrok";
 import { AVAILABLE_TOOLS, MOCO_PROMPTS, createMocoServer } from "./index.js";
 import { getHttpServerConfig, normalizeHttpBasePath } from "./config/environment.js";
 import { logger } from "./utils/logger.js";
@@ -11,6 +12,7 @@ interface HttpServerControls {
   transport: StreamableHTTPServerTransport;
   mcpServer: ReturnType<typeof createMocoServer>;
   shutdown: (signal?: NodeJS.Signals) => Promise<void>;
+  ngrokListener?: Listener;
 }
 
 interface StartHttpServerOptions {
@@ -19,6 +21,7 @@ interface StartHttpServerOptions {
   path?: string;
   sessionStateful?: boolean;
   handleSignals?: boolean;
+  ngrokEnabled?: boolean;
 }
 
 export async function startHttpServer(options: StartHttpServerOptions = {}): Promise<HttpServerControls> {
@@ -28,6 +31,7 @@ export async function startHttpServer(options: StartHttpServerOptions = {}): Pro
   const basePath = normalizeHttpBasePath(options.path ?? envConfig.basePath);
   const sessionStateful = options.sessionStateful ?? envConfig.sessionStateful;
   const handleSignals = options.handleSignals ?? true;
+  const ngrokEnabled = options.ngrokEnabled ?? envConfig.ngrokEnabled;
   const allowedHosts = envConfig.allowedHosts;
   const allowedOrigins = envConfig.allowedOrigins;
 
@@ -140,6 +144,21 @@ export async function startHttpServer(options: StartHttpServerOptions = {}): Pro
   console.error(`Available tools: ${AVAILABLE_TOOLS.map((tool) => tool.name).join(", ")}`);
   console.error(`Available prompts: ${MOCO_PROMPTS.map((prompt) => prompt.name).join(", ")}`);
 
+  let ngrokListener: Listener | undefined;
+
+  if (ngrokEnabled) {
+    void connect({ addr: port, authtoken_from_env: true })
+      .then((listener) => {
+        ngrokListener = listener;
+        const ingressUrl = listener.url();
+        console.error(`ngrok tunnel established at ${ingressUrl}`);
+        console.error(`Remote MCP endpoint available at ${ingressUrl}${basePath}`);
+      })
+      .catch((error) => {
+        console.error("Failed to establish ngrok tunnel:", error instanceof Error ? error.message : error);
+      });
+  }
+
   const shutdown = async (signal?: NodeJS.Signals) => {
     if (signal) {
       console.error(`Received ${signal}, stopping HTTP MCP server...`);
@@ -147,6 +166,14 @@ export async function startHttpServer(options: StartHttpServerOptions = {}): Pro
     await new Promise<void>((resolve) => httpServer.close(() => resolve()));
     await transport.close();
     await mcpServer.close();
+    if (ngrokListener) {
+      try {
+        await ngrokListener.close();
+        console.error("ngrok tunnel closed");
+      } catch (error) {
+        console.error("Error closing ngrok tunnel:", error instanceof Error ? error.message : error);
+      }
+    }
   };
 
   if (handleSignals) {
@@ -162,7 +189,7 @@ export async function startHttpServer(options: StartHttpServerOptions = {}): Pro
     });
   }
 
-  return { httpServer, transport, mcpServer, shutdown };
+  return { httpServer, transport, mcpServer, shutdown, ngrokListener };
 }
 
 const isCliEntry = (() => {

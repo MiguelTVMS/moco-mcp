@@ -556,6 +556,29 @@ Then configure your MCP client to use the local path:
 </details>
 
 <details>
+<summary><strong>Expose HTTP Transport via ngrok</strong></summary>
+
+Create a secure tunnel so external MCP clients can reach your local HTTP server.
+
+1. Retrieve your ngrok authtoken from the [ngrok dashboard](https://dashboard.ngrok.com/get-started/your-authtoken) and export it as `NGROK_AUTHTOKEN` (or add it to `.env`). Optional variables: `NGROK_REGION` and `NGROK_DOMAIN`.
+2. Set `NGROK_ENABLED=true` in `.env` if you want the HTTP server to launch a tunnel automatically on startup (for example when using the compound VS Code launch).
+3. Start the HTTP transport in one terminal:
+
+  ```bash
+  npm run dev:http
+  ```
+
+4. In a second terminal, launch the tunnel (skip this step if `NGROK_ENABLED=true` and you prefer the automatic tunnel):
+
+  ```bash
+  npm run tunnel:http
+  ```
+
+The script (or automatic tunnel) prints a public URL (e.g. `https://something.ngrok.app`) that forwards to `http://localhost:8080/mcp`. Use that URL in your remote MCP client configuration. Stop the tunnel anytime with `Ctrl+C`.
+
+</details>
+
+<details>
 <summary><strong>Docker Support</strong></summary>
 
 Two container flavours are provided out of the box:

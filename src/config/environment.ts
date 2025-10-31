@@ -21,6 +21,8 @@ export interface HttpServerConfig {
   basePath: string;
   /** Whether the server maintains session state */
   sessionStateful: boolean;
+  /** Whether to automatically start an ngrok tunnel */
+  ngrokEnabled: boolean;
   /** Optional DNS rebinding protection host whitelist */
   allowedHosts?: string[];
   /** Optional CORS origin whitelist */
@@ -32,7 +34,9 @@ export type LogLevel = "debug" | "info" | "warn" | "error";
 const DEFAULT_HTTP_PORT = 8080;
 const DEFAULT_HTTP_HOST = "0.0.0.0";
 const DEFAULT_HTTP_BASE_PATH = "/mcp";
+const DEFAULT_HTTP_SESSION_STATEFUL = false;
 const DEFAULT_LOG_LEVEL: LogLevel = "info";
+const DEFAULT_NGROK_ENABLED = false;
 
 /**
  * Retrieves and validates MoCo configuration from environment variables
@@ -98,7 +102,14 @@ export function getHttpServerConfig(): HttpServerConfig {
   const basePath = normalizeHttpBasePath(process.env.MCP_HTTP_PATH);
 
   const sessionStatefulEnv = process.env.MCP_HTTP_SESSION_STATEFUL;
-  const sessionStateful = sessionStatefulEnv ? sessionStatefulEnv.toLowerCase() !== "false" : true;
+  const sessionStateful = sessionStatefulEnv
+    ? sessionStatefulEnv.toLowerCase() !== "false"
+    : DEFAULT_HTTP_SESSION_STATEFUL;
+
+  const ngrokEnabledEnv = process.env.NGROK_ENABLED;
+  const ngrokEnabled = ngrokEnabledEnv
+    ? ["1", "true", "yes", "on"].includes(ngrokEnabledEnv.toLowerCase())
+    : DEFAULT_NGROK_ENABLED;
 
   const allowedHosts = parseCsv(process.env.MCP_HTTP_ALLOWED_HOSTS);
   const allowedOrigins = parseCsv(process.env.MCP_HTTP_ALLOWED_ORIGINS);
@@ -108,6 +119,7 @@ export function getHttpServerConfig(): HttpServerConfig {
     host,
     basePath,
     sessionStateful,
+    ngrokEnabled,
     allowedHosts,
     allowedOrigins,
   };

@@ -6,7 +6,8 @@
             "version": "24",
             "nodeGypDependencies": true
         },
-        "ghcr.io/devcontainers/features/git:1": {}
+        "ghcr.io/devcontainers/features/git:1": {},
+        "ghcr.io/jckimble/devcontainer-features/ngrok:3": {}
     },
     "remoteUser": "vscode",
     "postCreateCommand": "npm install",
@@ -32,11 +33,15 @@
         }
     },
     "forwardPorts": [
-        8080
+        8080,
+        4040
     ],
     "portsAttributes": {
         "8080": {
             "label": "MCP HTTP transport"
+        },
+        "4040": {
+            "label": "ngrok HTTP tunnel"
         }
     },
     "remoteEnv": {
