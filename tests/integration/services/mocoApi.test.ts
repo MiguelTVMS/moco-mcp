@@ -5,6 +5,7 @@
 
 import { describe, it, expect, beforeEach, jest } from '@jest/globals';
 import { MocoApiService } from '../../../src/services/mocoApi';
+import { cache } from '../../../src/utils/cache';
 import type { Activity, Project, Task, User, UserHoliday, UserPresence } from '../../../src/types/mocoTypes';
 
 // Mock fetch globally
@@ -16,6 +17,7 @@ describe('MocoApiService Integration Tests', () => {
   beforeEach(() => {
     apiService = new MocoApiService();
     mockFetch.mockClear();
+    cache.clear();
   });
 
   describe('getActivities', () => {

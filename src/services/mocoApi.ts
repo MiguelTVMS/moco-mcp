@@ -7,6 +7,7 @@
 import { getMocoConfig } from '../config/environment.js';
 import { handleMocoApiError } from '../utils/errorHandler.js';
 import { logger } from '../utils/logger.js';
+import { cache } from '../utils/cache.js';
 import type {
   Activity,
   Project,
@@ -253,6 +254,43 @@ export class MocoApiService {
     return allItems;
   }
 
+  private async getCachedProjects(): Promise<Project[]> {
+    return cache.getOrSet<Project[]>(
+      'projects:assigned',
+      this.config.cacheTtlSeconds,
+      () => this.fetchAllPages<Project>('/projects/assigned')
+    );
+  }
+
+  private async getCachedUsers(includeArchived: boolean, tags?: string[]): Promise<User[]> {
+    const normalizedTags = tags
+      ?.map(tag => tag.trim())
+      .filter(Boolean)
+      .sort((a, b) => a.localeCompare(b));
+
+    const cacheKeyParts = [
+      'users',
+      includeArchived ? '1' : '0',
+      normalizedTags && normalizedTags.length > 0 ? normalizedTags.join('|') : '-'
+    ];
+
+    const cacheKey = cacheKeyParts.join(':');
+
+    const params: Record<string, string> = {};
+    if (includeArchived) {
+      params.include_archived = 'true';
+    }
+    if (normalizedTags && normalizedTags.length > 0) {
+      params.tags = normalizedTags.join(',');
+    }
+
+    return cache.getOrSet<User[]>(
+      cacheKey,
+      this.config.cacheTtlSeconds,
+      () => this.fetchAllPages<User>('/users', params)
+    );
+  }
+
   /**
    * Retrieves activities for the current user within a date range
    * @param startDate - Start date in ISO 8601 format (YYYY-MM-DD)
@@ -288,7 +326,7 @@ export class MocoApiService {
    */
   async searchProjects(query: string): Promise<Project[]> {
     // Get all projects and filter client-side since MoCo API doesn't have text search
-    const allProjects = await this.getProjects();
+    const allProjects = await this.getCachedProjects();
 
     const lowerQuery = query.toLowerCase();
     return allProjects.filter(project =>
@@ -309,15 +347,7 @@ export class MocoApiService {
   ): Promise<User[]> {
     const { includeArchived = false, tags } = options;
 
-    const params: Record<string, string | number> = {};
-    if (includeArchived) {
-      params.include_archived = 'true';
-    }
-    if (tags && tags.length > 0) {
-      params.tags = tags.join(',');
-    }
-
-    const allUsers = await this.fetchAllPages<User>('/users', params);
+    const allUsers = await this.getCachedUsers(includeArchived, tags);
     const normalizedQuery = query.trim().toLowerCase();
 
     if (normalizedQuery.length === 0) {
@@ -378,7 +408,7 @@ export class MocoApiService {
    */
   async getProjectTasks(projectId: number): Promise<Task[]> {
     // Get all assigned projects
-    const assignedProjects = await this.getProjects();
+    const assignedProjects = await this.getCachedProjects();
 
     // Find the specific project
     const project = assignedProjects.find(p => p.id === projectId);

@@ -28,8 +28,29 @@ describe('environment', () => {
       expect(config).toEqual({
         apiKey: 'test-api-key',
         subdomain: 'test-company',
-        baseUrl: 'https://test-company.mocoapp.com/api/v1'
+        baseUrl: 'https://test-company.mocoapp.com/api/v1',
+        cacheTtlSeconds: 300
       });
+    });
+
+    it('should use custom cache ttl when MOCO_API_CACHE_TIME is provided', () => {
+      process.env.MOCO_API_KEY = 'test-api-key';
+      process.env.MOCO_SUBDOMAIN = 'test-company';
+      process.env.MOCO_API_CACHE_TIME = '120';
+
+      const config = getMocoConfig();
+
+      expect(config.cacheTtlSeconds).toBe(120);
+    });
+
+    it('should allow disabling cache by setting ttl to zero', () => {
+      process.env.MOCO_API_KEY = 'test-api-key';
+      process.env.MOCO_SUBDOMAIN = 'test-company';
+      process.env.MOCO_API_CACHE_TIME = '0';
+
+      const config = getMocoConfig();
+
+      expect(config.cacheTtlSeconds).toBe(0);
     });
 
     it('should throw error when MOCO_API_KEY is missing', () => {
@@ -101,6 +122,18 @@ describe('environment', () => {
       process.env.MOCO_SUBDOMAIN = '';
 
       expect(() => getMocoConfig()).toThrow('MOCO_SUBDOMAIN environment variable is required');
+    });
+
+    it('should throw when cache ttl is invalid', () => {
+      process.env.MOCO_API_KEY = 'test-api-key';
+      process.env.MOCO_SUBDOMAIN = 'test-company';
+      process.env.MOCO_API_CACHE_TIME = '-5';
+
+      expect(() => getMocoConfig()).toThrow('MOCO_API_CACHE_TIME must be a non-negative integer representing seconds.');
+
+      process.env.MOCO_API_CACHE_TIME = 'abc';
+
+      expect(() => getMocoConfig()).toThrow('MOCO_API_CACHE_TIME must be a non-negative integer representing seconds.');
     });
   });
 });

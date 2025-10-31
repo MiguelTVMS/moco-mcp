@@ -136,6 +136,11 @@ describe('errorHandler', () => {
         startDate: '2024-01-01',
         endDate: '2024-01-31'
       })).toBe('No presences found in the period 2024-01-01 to 2024-01-31.');
+
+      expect(createEmptyResultMessage({
+        type: 'users',
+        query: 'doe'
+      })).toBe('No users found for search term "doe".');
     });
 
     it('should handle unknown types', () => {

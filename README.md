@@ -266,6 +266,10 @@ MOCO_SUBDOMAIN=your-subdomain
 **Option 3: MCP Client Configuration (recommended)**
 Use the `env` section in your MCP client configuration as shown above.
 
+**Optional Environment Variables**
+
+- `MOCO_API_CACHE_TIME` – Cache duration (in seconds) for list endpoints retrieved by the MCP server. Defaults to 300 (5 minutes). Set to `0` to disable caching.
+
 ## 🛠️ Available Tools
 
 | Tool | Description | Parameters |
@@ -273,6 +277,7 @@ Use the `env` section in your MCP client configuration as shown above.
 | `get_activities` | Get activities within a date range with summation and optional project filtering | `startDate`, `endDate` (ISO 8601), `projectId` (optional) |
 | `get_user_projects` | List all assigned projects or search by query | `query` (optional) |
 | `get_user_project_tasks` | Get all tasks for a specific assigned project | `projectId` |
+| `search_users` | Search the staff directory by name, email, role, unit, tags, or phone numbers | `query`, `includeArchived` (optional), `tags` (optional array) |
 | `get_user_holidays` | Get holiday overview for a year with calculations | `year` |
 | `get_user_presences` | Get presence data within a date range with daily summaries | `startDate`, `endDate` (ISO 8601) |
 | `get_user_sick_days` | Get sick days overview for a year with calculations | `year` |
