@@ -3,7 +3,7 @@
  * Provides time tracking data with automatic aggregation and summation
  */
 
-import { z } from 'zod';
+import { string, z } from 'zod';
 import { zodToJsonSchema } from 'zod-to-json-schema';
 import { MocoApiService } from '../services/mocoApi.js';
 import { validateDateRange } from '../utils/dateUtils.js';
@@ -225,8 +225,8 @@ function formatActivitiesSummary(summary: ActivityRangeSummary, projectId?: numb
       lines.push(`  Project ${project.projectId} (${project.projectName}):`);
 
       project.tasks.forEach(task => {
-        const billableMark = task.billable ? 'Billable' : 'Non-billable';
-        lines.push(`    Task ${task.taskId} [${billableMark}] (${task.taskName}): ${task.hours}h (${task.hoursFormatted})`);
+        const billableMark = task.billable ? ' [Billable]' : '';
+        lines.push(`    Task ${task.taskId}${billableMark} (${task.taskName}): ${task.hours}h (${task.hoursFormatted})`);
       });
 
       lines.push(`    Project total: ${project.projectTotal.hours}h (${project.projectTotal.hoursFormatted})`);
