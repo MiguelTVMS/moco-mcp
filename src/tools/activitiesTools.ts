@@ -73,7 +73,7 @@ export const getActivitiesTool = {
 function aggregateActivities(activities: Activity[], startDate: string, endDate: string): ActivityRangeSummary {
   // Group activities by date
   const activitiesByDate = new Map<string, Activity[]>();
-  
+
   activities.forEach(activity => {
     if (!activitiesByDate.has(activity.date)) {
       activitiesByDate.set(activity.date, []);
@@ -86,12 +86,12 @@ function aggregateActivities(activities: Activity[], startDate: string, endDate:
   const projectTotalsMap = new Map<number, {
     projectName: string;
     totalHours: number;
-    tasks: Map<number, { taskName: string; totalHours: number }>;
+    tasks: Map<number, { taskName: string; totalHours: number; billable: boolean }>;
   }>();
 
   // Sort dates for consistent output
   const sortedDates = Array.from(activitiesByDate.keys()).sort();
-  
+
   sortedDates.forEach(date => {
     const dayActivities = activitiesByDate.get(date)!;
     const dailySummary = createDailySummary(date, dayActivities);
@@ -114,7 +114,8 @@ function aggregateActivities(activities: Activity[], startDate: string, endDate:
         if (!projectTotal.tasks.has(task.taskId)) {
           projectTotal.tasks.set(task.taskId, {
             taskName: task.taskName,
-            totalHours: 0
+            totalHours: 0,
+            billable: task.billable
           });
         }
         projectTotal.tasks.get(task.taskId)!.totalHours += task.hours;
@@ -130,7 +131,8 @@ function aggregateActivities(activities: Activity[], startDate: string, endDate:
     tasks: Array.from(data.tasks.entries()).map(([taskId, taskData]) => ({
       taskId,
       taskName: taskData.taskName,
-      total: createTimeFormat(taskData.totalHours)
+      total: createTimeFormat(taskData.totalHours),
+      billable: taskData.billable
     }))
   }));
 
@@ -153,7 +155,7 @@ function createDailySummary(date: string, activities: Activity[]): DailyActivity
   // Group by project
   const projectsMap = new Map<number, {
     projectName: string;
-    tasks: Map<number, { taskName: string; hours: number }>;
+    tasks: Map<number, { taskName: string; hours: number; billable: boolean }>;
   }>();
 
   activities.forEach(activity => {
@@ -168,7 +170,8 @@ function createDailySummary(date: string, activities: Activity[]): DailyActivity
     if (!project.tasks.has(activity.task.id)) {
       project.tasks.set(activity.task.id, {
         taskName: activity.task.name,
-        hours: 0
+        hours: 0,
+        billable: activity.billable
       });
     }
 
@@ -181,7 +184,8 @@ function createDailySummary(date: string, activities: Activity[]): DailyActivity
       taskId,
       taskName: taskData.taskName,
       hours: taskData.hours,
-      hoursFormatted: createTimeFormat(taskData.hours).hoursFormatted
+      hoursFormatted: createTimeFormat(taskData.hours).hoursFormatted,
+      billable: taskData.billable
     }));
 
     const projectTotalHours = sumHours(tasks.map(task => task.hours));
@@ -208,7 +212,7 @@ function createDailySummary(date: string, activities: Activity[]): DailyActivity
  */
 function formatActivitiesSummary(summary: ActivityRangeSummary, projectId?: number): string {
   const lines: string[] = [];
-  
+
   const titleSuffix = projectId ? ` (filtered by project ID: ${projectId})` : '';
   lines.push(`Activities from ${summary.startDate} to ${summary.endDate}${titleSuffix}:`);
   lines.push('');
@@ -216,17 +220,18 @@ function formatActivitiesSummary(summary: ActivityRangeSummary, projectId?: numb
   // Daily summaries
   summary.dailySummaries.forEach(day => {
     lines.push(`${day.date}:`);
-    
+
     day.projects.forEach(project => {
       lines.push(`  Project ${project.projectId} (${project.projectName}):`);
-      
+
       project.tasks.forEach(task => {
-        lines.push(`    Task ${task.taskId} (${task.taskName}): ${task.hours}h (${task.hoursFormatted})`);
+        const billableMark = task.billable ? 'Billable' : 'Non-billable';
+        lines.push(`    Task ${task.taskId} [${billableMark}] (${task.taskName}): ${task.hours}h (${task.hoursFormatted})`);
       });
-      
+
       lines.push(`    Project total: ${project.projectTotal.hours}h (${project.projectTotal.hoursFormatted})`);
     });
-    
+
     lines.push(`  Daily total: ${day.dailyTotal.hours}h (${day.dailyTotal.hoursFormatted})`);
     lines.push('');
   });
@@ -236,7 +241,7 @@ function formatActivitiesSummary(summary: ActivityRangeSummary, projectId?: numb
     lines.push('Project totals (overall):');
     summary.projectTotals.forEach(project => {
       lines.push(`- Project ${project.projectId} (${project.projectName}): ${project.total.hours}h (${project.total.hoursFormatted})`);
-      
+
       project.tasks.forEach(task => {
         lines.push(`  - Task ${task.taskId} (${task.taskName}): ${task.total.hours}h (${task.total.hoursFormatted})`);
       });

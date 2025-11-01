@@ -166,6 +166,7 @@ export interface TaskActivitySummary {
   taskName: string;
   hours: number;
   hoursFormatted: string;
+  billable: boolean;
 }
 
 /**
@@ -202,6 +203,7 @@ export interface ActivityRangeSummary {
       taskId: number;
       taskName: string;
       total: TimeFormat;
+      billable: boolean;
     }>;
   }>;
   grandTotal: TimeFormat;
